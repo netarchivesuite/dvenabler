@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>netark</groupId>
-    <artifactId>netark</artifactId>
+    <groupId>dvenabler</groupId>
+    <artifactId>dvenabler</artifactId>
     <version>1.0-SNAPSHOT</version>
 
   <build>
@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
-            <version>4.8.2</version>
+            <version>4.8.1</version>
             <classifier>pom</classifier>
             <exclusions>
                 <exclusion>
@@ -100,7 +100,7 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>4.8.2</version>
+            <version>4.8.1</version>
         </dependency>
     </dependencies>
 

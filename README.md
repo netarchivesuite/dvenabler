@@ -1,8 +1,8 @@
 # DVEnabler
 
-Adds DocValues to existing non-DocValued fields in a Solr index, without full re-index
+Adds DocValues to existing non-DocValued fields in a Lucene/Solr index, without full re-index
 
-Fields in Solr can be indexed, stored and DocValued. DocValued fields are used for functions requiring fast bulk access to field content. Faceting and sorting are examples.  DocValues is enabled on a per-field basis. Normally a full re-index of the Solr index is required if one want to enable DocValues for a field.
+Fields in Lucene/Solr can be indexed, stored and DocValued. DocValued fields are used for functions requiring fast bulk access to field content. Faceting and sorting are examples.  DocValues is enabled on a per-field basis. Normally a full re-index of the Solr index is required if one want to enable DocValues for a field.
 
 ## Solr index fields
 
