@@ -36,6 +36,8 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 
 public class TransformingAtomicReaderTest extends TestCase {
     private static Log log = LogFactory.getLog(TransformingAtomicReaderTest.class);
@@ -82,7 +84,9 @@ public class TransformingAtomicReaderTest extends TestCase {
         log.info("testCreateAndReadPlainIndex started");
         final File INDEX = generateIndex();
         Directory directory = MMapDirectory.open(INDEX);
-        IndexReader reader = new TransformingDirectoryReader(DirectoryReader.open(directory));
+        IndexReader reader = new TransformingDirectoryReader(
+                DirectoryReader.open(directory),
+                new HashSet<String>(Arrays.asList(STORED)));
         IndexSearcher searcher = new IndexSearcher(reader);
 
         try {
