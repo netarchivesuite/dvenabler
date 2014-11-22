@@ -24,12 +24,12 @@ import java.util.Set;
 /**
 *
 */
-public class TransformingAtomicReader extends FilterAtomicReader {
-    private static Log log = LogFactory.getLog(TransformingAtomicReader.class);
+public class DVAtomicReader extends FilterAtomicReader {
+    private static Log log = LogFactory.getLog(DVAtomicReader.class);
 
     private final Set<String> dvFields;
 
-    public TransformingAtomicReader(AtomicReader in, Set<String> dvFields) {
+    public DVAtomicReader(AtomicReader in, Set<String> dvFields) {
         super(in);
         this.dvFields = dvFields;
         log.info("Wrapped AtomicReader");

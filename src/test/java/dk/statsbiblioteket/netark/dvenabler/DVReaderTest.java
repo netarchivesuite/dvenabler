@@ -39,8 +39,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 
-public class TransformingAtomicReaderTest extends TestCase {
-    private static Log log = LogFactory.getLog(TransformingAtomicReaderTest.class);
+public class DVReaderTest extends TestCase {
+    private static Log log = LogFactory.getLog(DVReaderTest.class);
 
     private static final String ID = "id";
     private static final String DV = "dv";
@@ -84,7 +84,7 @@ public class TransformingAtomicReaderTest extends TestCase {
         log.info("testCreateAndReadPlainIndex started");
         final File INDEX = generateIndex();
         Directory directory = MMapDirectory.open(INDEX);
-        IndexReader reader = new TransformingDirectoryReader(
+        IndexReader reader = new DVDirectoryReader(
                 DirectoryReader.open(directory),
                 new HashSet<String>(Arrays.asList(STORED)));
         IndexSearcher searcher = new IndexSearcher(reader);

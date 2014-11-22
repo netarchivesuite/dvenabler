@@ -24,25 +24,25 @@ import java.util.*;
  * Wraps the standard DirectoryReader from Lucene and simulates DocValues for selected fields by extracting them from stored fields.
  * Note that the extraction can be very memory-heavy, primarily for String fields.
  */
-public class TransformingDirectoryReader extends FilterDirectoryReader {
-    private static Log log = LogFactory.getLog(TransformingDirectoryReader.class);
+public class DVDirectoryReader extends FilterDirectoryReader {
+    private static Log log = LogFactory.getLog(DVDirectoryReader.class);
     private final Set<String> dvFields;
 
-   /**
+  /**
      * Create a DocValues-simulating reader.
      * @param in            the Lucene DirectoryReader to wrap.
      * @param dvFields  the fields to simulate DocValues for.
      */
-    public TransformingDirectoryReader(DirectoryReader in, Set<String> dvFields) {
+    public DVDirectoryReader(DirectoryReader in, Set<String> dvFields) {
         super(in, new TransformingAtomicReaderWrapper(dvFields));
         this.dvFields = dvFields;
-        log.info("Constructed TransformingDirectoryReader with DocValues wrapper");
+        log.info("Constructed DVDirectoryReader with DocValues wrapper");
     }
 
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
         log.info("Wrapping DirectoryReader");
-        return new TransformingDirectoryReader(in, dvFields);
+        return new DVDirectoryReader(in, dvFields);
     }
 
     public static class TransformingAtomicReaderWrapper extends SubReaderWrapper {
@@ -55,8 +55,7 @@ public class TransformingDirectoryReader extends FilterDirectoryReader {
         @Override
         public AtomicReader wrap(AtomicReader reader) {
             log.debug("Wrapping Atomic");
-            return new TransformingAtomicReader(reader, dvFields);
+            return new DVAtomicReader(reader, dvFields);
         }
     }
-
 }
