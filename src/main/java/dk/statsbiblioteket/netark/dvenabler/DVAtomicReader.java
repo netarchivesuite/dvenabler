@@ -70,6 +70,9 @@ public class DVAtomicReader extends FilterAtomicReader {
         return dv;
     }
 
+    // TODO: Override getFieldInfos to adjust info for the DV-wrapping fields
+    // TODO: Override getFields to mirror getFieldInfos adjustment of meta data
+
     @Override
     protected void doClose() throws IOException {
         log.info("close called");
