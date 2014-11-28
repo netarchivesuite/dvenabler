@@ -50,6 +50,8 @@ public class DVReaderTest extends TestCase {
     private static final String STORED = "stored";
     public static final String STORED_CONTENT = "plainstore";
 
+    private static final Version LUCENE_VERSION = Version.LUCENE_48;
+    
     public void testCreateAndReadPlainIndex() throws IOException, ParseException {
         log.info("testCreateAndReadPlainIndex started");
         final File INDEX = generateIndex();
@@ -58,8 +60,8 @@ public class DVReaderTest extends TestCase {
         IndexSearcher searcher = new IndexSearcher(reader);
 
         try {
-            Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_48);
-            QueryParser queryParser = new QueryParser(Version.LUCENE_48, SEARCH, analyzer);
+            Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
+            QueryParser queryParser = new QueryParser(LUCENE_VERSION, SEARCH, analyzer);
             Query query = queryParser.parse(SEARCH_CONTENT);
             TopDocs topDocs = searcher.search(query, 10);
             assertEquals("Search for 'somecontent' should give the right number of results", 1, topDocs.totalHits);
@@ -90,8 +92,8 @@ public class DVReaderTest extends TestCase {
         IndexSearcher searcher = new IndexSearcher(reader);
 
         try {
-            Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_48);
-            QueryParser queryParser = new QueryParser(Version.LUCENE_48, SEARCH, analyzer);
+            Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
+            QueryParser queryParser = new QueryParser(LUCENE_VERSION, SEARCH, analyzer);
             Query query = queryParser.parse(SEARCH_CONTENT);
             TopDocs topDocs = searcher.search(query, 10);
             assertEquals("Search for 'somecontent' should give the right number of results", 1, topDocs.totalHits);
@@ -132,7 +134,7 @@ public class DVReaderTest extends TestCase {
 
     public File generateIndex() throws IOException {
         final File INDEX = new File("target/testindex.deletefreely");
-        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_48);
+        Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
 
         final FieldType STORED_F = new FieldType();
         STORED_F.setIndexed(true);
@@ -148,7 +150,7 @@ public class DVReaderTest extends TestCase {
 
 
         IndexWriter indexWriter = new IndexWriter(MMapDirectory.open(INDEX),
-                                                  new IndexWriterConfig(Version.LUCENE_48, analyzer));
+                                                  new IndexWriterConfig(LUCENE_VERSION, analyzer));
         {
             Document document = new Document();
             document.add(new Field(ID, "1", STORED_F));
