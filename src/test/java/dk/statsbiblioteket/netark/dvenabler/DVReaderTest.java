@@ -48,7 +48,7 @@ public class DVReaderTest extends TestCase {
     private static final String SEARCH = "search";
     private static final String SEARCH_CONTENT = "searchcontent";
     private static final String STORED = "stored";
-    public static final String STORED_CONTENT = "plainstore";
+    private static final String STORED_CONTENT = "plainstore";
 
     private static final Version LUCENE_VERSION = Version.LUCENE_48;
     
