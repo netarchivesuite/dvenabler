@@ -131,7 +131,7 @@ public class DVReaderTest extends TestCase {
     }
 
     public File generateIndex() throws IOException {
-        final File INDEX = new File("testindex.deletefreely");
+        final File INDEX = new File("target/testindex.deletefreely");
         Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_48);
 
         final FieldType STORED_F = new FieldType();
