@@ -5,7 +5,7 @@ public class SchemaField {
 	private String name;
 	private String type;
 	private boolean stored;
-	private boolean hasDocVal;
+	private boolean docVal;
 	
 	public SchemaField(){
 		
@@ -29,17 +29,14 @@ public class SchemaField {
 	public void setStored(boolean stored) {
 		this.stored = stored;
 	}
-	public boolean isHasDocVal() {
-		return hasDocVal;
+
+	public boolean isDocVal() {
+		return docVal;
 	}
-	public void setHasDocVal(boolean hasDocVal) {
-		this.hasDocVal = hasDocVal;
+
+	public void setDocVal(boolean docVal) {
+		this.docVal = docVal;
 	}
-	
-	
-	
-	
-	
 	
 
 }
