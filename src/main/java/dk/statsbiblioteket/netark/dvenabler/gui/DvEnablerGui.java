@@ -81,7 +81,7 @@ public class DvEnablerGui extends JFrame  {
 		gbc.gridheight = 1;
 		gbc.gridwidth = 1;                          
 		buildButton.setEnabled(false);
-		fileButton.addActionListener(new IndexBuilderActionListener());
+        buildButton.addActionListener(new IndexBuilderActionListener());
 		getContentPane().add(buildButton, gbc);        
 
 		//Row start        
