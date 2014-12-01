@@ -12,6 +12,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 
+import dk.statsbiblioteket.netark.dvenabler.gui.SchemaField;
+
 public class IndexUtils {
 
 
@@ -33,4 +35,37 @@ public class IndexUtils {
         }
        return schemaFieldList;
     }
+
+
+    //TMP hardcoded method
+public static ArrayList<SchemaField> getFields(){
+	
+	ArrayList<SchemaField> fieldsList = new ArrayList<SchemaField>();
+	
+	SchemaField f1 = new SchemaField();
+	f1.setHasDocVal(false);
+	f1.setStored(true);
+	f1.setName("field_name1");
+	f1.setType("String");
+	fieldsList.add(f1);
+	
+	SchemaField f2 = new SchemaField();
+	f2.setHasDocVal(false);
+	f2.setStored(false);
+	f2.setName("field_name2");
+	f2.setType("String");
+	fieldsList.add(f2);
+	
+	SchemaField f3 = new SchemaField();
+	f3.setHasDocVal(false);
+	f3.setStored(false);
+	f3.setName("field_name3");
+	f3.setType("tint");
+	fieldsList.add(f3);
+	
+	return fieldsList;
+	
+}
+    
+
 }
