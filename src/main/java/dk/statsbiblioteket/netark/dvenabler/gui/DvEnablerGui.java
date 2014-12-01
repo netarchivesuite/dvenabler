@@ -38,7 +38,8 @@ public class DvEnablerGui extends JFrame  {
 	JButton buildButton = new JButton("Rebuild index");
 	JLabel indexFileLabel = new JLabel("Index file:", JLabel.LEFT);
 	JFileChooser chooser;
-
+	JScrollPane checkBoxScrollPane;
+	
 	public static void main(String args[]) throws Exception {
 		main = new DvEnablerGui();
 		main.init();
@@ -110,9 +111,9 @@ public class DvEnablerGui extends JFrame  {
 		box.add(c);
 		box.add(d);               
 		box.add(e);
-		JScrollPane pane = new JScrollPane(box);
-		pane.setPreferredSize(new Dimension(400, 300));
-		getContentPane().add(pane, gbc);
+        checkBoxScrollPane = new JScrollPane(box);
+		checkBoxScrollPane.setPreferredSize(new Dimension(400, 300));
+		getContentPane().add(checkBoxScrollPane, gbc);
 
 
 
@@ -177,8 +178,25 @@ public class DvEnablerGui extends JFrame  {
 	class IndexBuilderActionListener implements ActionListener{
 
 		public void actionPerformed(ActionEvent e) {
-           System.out.println("Todo build index");
+        	    
+	    System.out.println("Todo build index");
 
+   		JCheckBox a = new JCheckBox("A");
+   		JCheckBox b = new JCheckBox("B");
+   		JCheckBox c = new JCheckBox("C");
+   		JCheckBox d = new JCheckBox("D");
+   		
+
+
+   		Box box = Box.createVerticalBox();
+   		box.add(a);
+   		box.add(b);
+   		box.add(c);
+   		box.add(d);                  		
+        
+        checkBoxScrollPane.add(box);        
+        checkBoxScrollPane.setViewportView(box);    
+        checkBoxScrollPane.repaint();
 		}
 
 	}
