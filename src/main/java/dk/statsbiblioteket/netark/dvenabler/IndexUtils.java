@@ -7,6 +7,8 @@ import java.util.List;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
@@ -36,6 +38,24 @@ public class IndexUtils {
        return schemaFieldList;
     }
 
+    
+    public static  ArrayList<FieldInfo> getAllFieldsInfoFromIndex(String indexLocation) throws Exception{
+
+        Directory directory = MMapDirectory.open(new File(indexLocation));
+        IndexReader reader = DirectoryReader.open(directory);   
+
+        ArrayList<FieldInfo> fieldInfoList= new ArrayList<FieldInfo>();
+        List<AtomicReaderContext> leaves = reader.leaves();
+        for (AtomicReaderContext context : leaves) {
+            AtomicReader atomicReader = context.reader();
+             FieldInfos fieldInfos = atomicReader.getFieldInfos();           
+            for (FieldInfo fieldInfo : fieldInfos) {                    
+                fieldInfoList.add(fieldInfo);
+            }         
+        }
+       return fieldInfoList;
+    }
+    
 
     //TODO, implement. Maybe reuse the field objects from Lucene
 public static ArrayList<SchemaField> getFields(String indexLocation){
