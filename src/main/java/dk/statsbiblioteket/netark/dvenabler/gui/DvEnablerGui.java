@@ -197,12 +197,32 @@ public class DvEnablerGui extends JFrame  {
 
 			try{
 
-				//Need an index method to call
-				for ( JCheckBox current : fieldsCheckBoxList){ //Find which fields has been marked for DocVal
-					if (current.isSelected()){
-						System.out.println(current.getText() +  " is marked for DocVal");
+				chooser.setCurrentDirectory(new java.io.File("."));
+				chooser.setDialogTitle("Select index rebuild data folder.");
+				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				//
+				// disable the "All files" option.
+				//
+				chooser.setAcceptAllFileFilterUsed(false);
+
+				int returnVal = chooser.showOpenDialog(null); 
+
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File file = chooser.getSelectedFile();
+					String rebuildIndexfilePath= file.getAbsolutePath();
+					
+					//Need an index method to call
+					for ( JCheckBox current : fieldsCheckBoxList){ //Find which fields has been marked for DocVal
+						if (current.isSelected()){
+							System.out.println(current.getText() +  " is marked for DocVal");
+						}
 					}
+
+					
+					
 				}
+				
+				
 
 			}
 			catch(Exception ex){
