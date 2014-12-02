@@ -7,6 +7,7 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
 
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -21,10 +22,14 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.border.BevelBorder;
 
+import dk.statsbiblioteket.netark.dvenabler.IndexUtils;
+
 
 public class DvEnablerGui extends JFrame  {
 
 	private static final long serialVersionUID = 1L;
+
+	private ArrayList<JCheckBox> fieldsCheckBoxList;  //For checkbox to pick doc values fields. 	
 
 	private static DvEnablerGui main; 
 
@@ -39,25 +44,25 @@ public class DvEnablerGui extends JFrame  {
 	JLabel indexFileLabel = new JLabel("Index file:", JLabel.LEFT);
 	JFileChooser chooser;
 	JScrollPane checkBoxScrollPane;
-	
+
 	public static void main(String args[]) throws Exception {
 		main = new DvEnablerGui();
 		main.init();
 		main.pack();
-	    main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		main.setVisible(true);
 		main.setResizable(true);
 	}
 
 
 	public  void init() throws Exception{
-
 		createMenu();
 		createGui();
 	}
 
 	public void createGui() throws Exception {
 
+		int row = 0;
 		getContentPane().setLayout(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.anchor = GridBagConstraints.NORTHWEST; 
@@ -65,58 +70,37 @@ public class DvEnablerGui extends JFrame  {
 		gbc.insets = new Insets(5, 5, 5, 5);
 
 
-		
-
-		//Row start        
 		gbc.gridx = 0;
-		gbc.gridy = 0;
+		gbc.gridy = row; // row not finished
 		gbc.gridheight = 1;
 		gbc.gridwidth = 1;                          
 		fileButton=  new JButton("Index");;
 		fileButton.addActionListener(new IndexFolderActionListener());
 		getContentPane().add(fileButton, gbc);
 
-		//Row start        
 		gbc.gridx = 1;
-		gbc.gridy = 0;
+		gbc.gridy = row++;
 		gbc.gridheight = 1;
 		gbc.gridwidth = 1;                          
 		buildButton.setEnabled(false);
-        buildButton.addActionListener(new IndexBuilderActionListener());
+		buildButton.addActionListener(new IndexBuilderActionListener());
 		getContentPane().add(buildButton, gbc);        
 
-		//Row start        
 		gbc.gridx = 0;
-		gbc.gridy = 1;
+		gbc.gridy = row++;
 		gbc.gridheight = 1;
 		gbc.gridwidth = 2;                          
 		getContentPane().add(indexFileLabel, gbc);
 
-
 		gbc.gridx = 0;
-		gbc.gridy = 2;
+		gbc.gridy = row++;
 		gbc.gridheight = 1;
 		gbc.gridwidth = 2;                          
 
-		JCheckBox a = new JCheckBox("A");
-		JCheckBox b = new JCheckBox("B");
-		JCheckBox c = new JCheckBox("C");
-		JCheckBox d = new JCheckBox("D");
-		JCheckBox e = new JCheckBox("E");
-
-
-		Box box = Box.createVerticalBox();
-		box.add(a);
-		box.add(b);
-		box.add(c);
-		box.add(d);               
-		box.add(e);
-        checkBoxScrollPane = new JScrollPane(box);
+		Box box = Box.createVerticalBox(); //Empty before index is selected
+		checkBoxScrollPane = new JScrollPane(box);
 		checkBoxScrollPane.setPreferredSize(new Dimension(400, 300));
 		getContentPane().add(checkBoxScrollPane, gbc);
-
-
-
 	}
 
 
@@ -163,43 +147,69 @@ public class DvEnablerGui extends JFrame  {
 
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				File file = chooser.getSelectedFile();
-				indexFileLabel.setText("Index file:"+file.getAbsolutePath());
+				String filePath= file.getAbsolutePath();
+				indexFileLabel.setText("Index file:"+filePath);
 				buildButton.setEnabled(true);
-				System.out.println("selected file:"+file.getAbsolutePath());
+				System.out.println("selected file:"+filePath);
 
+				createJCheckBoxes(filePath);
+			}
+		}
+
+		private void createJCheckBoxes(String indexFolder){
+
+			try{
+
+				fieldsCheckBoxList  = new ArrayList<JCheckBox>();
+				ArrayList<SchemaField> fields = IndexUtils.getFields(indexFolder);
+
+				Box box = Box.createVerticalBox();
+				for (SchemaField current: fields){				
+					JCheckBox checkBox = new JCheckBox(current.getName() +", "+current.getType());
+//					checkBox.setText(current.getName());
+					fieldsCheckBoxList.add(checkBox);
+					System.out.println("iterating over:"+current.getName());
+					if (current.isDocVal()){
+						checkBox.setSelected(true);
+					}
+					if (!current.isStored()){
+						checkBox.setEnabled(false); //Can not generate docvalues for non-stored fields
+					}			  
+					box.add(checkBox);
+				}
+
+				checkBoxScrollPane.add(box);      
+				checkBoxScrollPane.setViewportView(box);    
+				checkBoxScrollPane.repaint();
 
 			}
+			catch(Exception ex){
+				showError(ex);
+			}
 
-		}
-
+		}		
 	}
 
-	
+
 	class IndexBuilderActionListener implements ActionListener{
 
-		public void actionPerformed(ActionEvent e) {
-        	    
-	    System.out.println("Todo build index");
+		public void actionPerformed(ActionEvent e) {        
 
-   		JCheckBox a = new JCheckBox("A");
-   		JCheckBox b = new JCheckBox("B");
-   		JCheckBox c = new JCheckBox("C");
-   		JCheckBox d = new JCheckBox("D");
-   		
+			try{
 
+				//Need an index method to call
+				for ( JCheckBox current : fieldsCheckBoxList){ //Find which fields has been marked for DocVal
+					if (current.isSelected()){
+						System.out.println(current.getText() +  " is marked for DocVal");
+					}
+				}
 
-   		Box box = Box.createVerticalBox();
-   		box.add(a);
-   		box.add(b);
-   		box.add(c);
-   		box.add(d);                  		
-        
-        checkBoxScrollPane.add(box);        
-        checkBoxScrollPane.setViewportView(box);    
-        checkBoxScrollPane.repaint();
+			}
+			catch(Exception ex){
+				showError(ex);
+			}
 		}
 
 	}
 
-	
 }
