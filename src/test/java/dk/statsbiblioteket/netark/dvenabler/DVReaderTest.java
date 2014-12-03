@@ -19,10 +19,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -49,6 +46,11 @@ public class DVReaderTest extends TestCase {
     private static final String SEARCH_CONTENT = "searchcontent";
     private static final String STORED = "stored";
     private static final String STORED_CONTENT = "plainstore";
+    private static final String DOUBLE = "double";
+    private static final double DOUBLE_CONTENT = 12.13;
+    private static final long LONG_CONTENT = 87L;
+    private static final String LONG = "long";
+
 
     private static final Version LUCENE_VERSION = Version.LUCENE_48;
     
@@ -59,27 +61,7 @@ public class DVReaderTest extends TestCase {
         IndexReader reader = DirectoryReader.open(directory);
         IndexSearcher searcher = new IndexSearcher(reader);
 
-        try {
-            Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
-            QueryParser queryParser = new QueryParser(LUCENE_VERSION, SEARCH, analyzer);
-            Query query = queryParser.parse(SEARCH_CONTENT);
-            TopDocs topDocs = searcher.search(query, 10);
-            assertEquals("Search for 'somecontent' should give the right number of results", 1, topDocs.totalHits);
-            Document doc = reader.document(topDocs.scoreDocs[0].doc);
-            assertEquals("The stored value for the document should be correct", STORED_CONTENT, doc.get(STORED));
-            String dv = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, DV);
-            assertEquals("The DocValues content for the document should be correct", DV_CONTENT, dv);
-            try {
-                String nonexistingDV = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, STORED);
-                fail("Requesting the DocValue from the non-DV field " + STORED + " should have failed but returned "
-                     + nonexistingDV);
-            } catch (Exception e) {
-                log.debug("Requesting non-existing DV gave an error as expected");
-            }
-        } finally {
-            reader.close();
-            delete(INDEX);
-        }
+        assertIndexValues(INDEX, reader, searcher, false);
     }
 
     public void testCreateAndReadWrappedIndex() throws IOException, ParseException {
@@ -91,22 +73,44 @@ public class DVReaderTest extends TestCase {
                 new HashSet<String>(Arrays.asList(STORED)));
         IndexSearcher searcher = new IndexSearcher(reader);
 
+        assertIndexValues(INDEX, reader, searcher, true);
+    }
+
+    private void assertIndexValues(File index, IndexReader reader, IndexSearcher searcher, boolean dvExpected)
+            throws ParseException, IOException {
         try {
+            final String M = "dvExpected=" + dvExpected + ". ";
             Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
             QueryParser queryParser = new QueryParser(LUCENE_VERSION, SEARCH, analyzer);
             Query query = queryParser.parse(SEARCH_CONTENT);
             TopDocs topDocs = searcher.search(query, 10);
-            assertEquals("Search for 'somecontent' should give the right number of results", 1, topDocs.totalHits);
+            assertEquals(M + "Search for 'somecontent' should give the right number of results", 1, topDocs.totalHits);
             Document doc = reader.document(topDocs.scoreDocs[0].doc);
-            assertEquals("The stored value for the document should be correct", STORED_CONTENT, doc.get(STORED));
+
+            assertEquals(M + "The stored value for the document should be correct", STORED_CONTENT, doc.get(STORED));
+            assertEquals(M + "The stored long value for the document should be correct",
+                         Long.toString(LONG_CONTENT), doc.get(LONG));
+            assertEquals(M + "The stored double value for the document should be correct",
+                         Double.toString(DOUBLE_CONTENT), doc.get(DOUBLE));
+
             String dv = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, DV);
-            assertEquals("The DocValues content for the document should be correct", DV_CONTENT, dv);
-            String nonexistingDV = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, STORED);
-            assertEquals("Requesting DV from a stored field should work due to the wrapper",
-                         STORED_CONTENT, nonexistingDV);
+            assertEquals("The plain DocValues content for the document should be correct", DV_CONTENT, dv);
+            try {
+                String nonexistingDV = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, STORED);
+                if (!dvExpected) {
+                    fail(M + "Requesting the DocValue from the non-DV field " + STORED
+                         + " should have failed but returned " + nonexistingDV);
+                }
+                assertEquals("Requesting DV from a stored field should work due to the wrapper",
+                             STORED_CONTENT, nonexistingDV);
+            } catch (Exception e) {
+                if (dvExpected) {
+                    fail(M + "There should have been a value for " + STORED);
+                }
+            }
         } finally {
             reader.close();
-            delete(INDEX);
+            delete(index);
         }
     }
 
@@ -143,6 +147,17 @@ public class DVReaderTest extends TestCase {
         final FieldType SEARCH_F = new FieldType();
         SEARCH_F.setIndexed(true);
 
+        final FieldType LONG_F = new FieldType();
+        LONG_F.setIndexed(true);
+        LONG_F.setStored(true);
+        LONG_F.setNumericType(FieldType.NumericType.LONG);
+
+        final FieldType DOUBLE_F = new FieldType();
+        DOUBLE_F.setIndexed(true);
+        DOUBLE_F.setStored(true);
+        DOUBLE_F.setNumericType(FieldType.NumericType.DOUBLE);
+
+
 /*        final FieldType STR_DV = new FieldType();
         STR_DV.setIndexed(true);
         STR_DV.setStored(true);
@@ -156,6 +171,8 @@ public class DVReaderTest extends TestCase {
             document.add(new Field(ID, "1", STORED_F));
             document.add(new Field(SEARCH, SEARCH_CONTENT, SEARCH_F));
             document.add(new Field(STORED, STORED_CONTENT, STORED_F));
+            document.add(new LongField(LONG, LONG_CONTENT, LONG_F));
+            document.add(new DoubleField(DOUBLE, DOUBLE_CONTENT, DOUBLE_F));
             document.add(new SortedDocValuesField(DV, new BytesRef(DV_CONTENT)));
             indexWriter.addDocument(document);
         }
