@@ -29,6 +29,33 @@ public class DVAtomicReader extends FilterAtomicReader {
 
     private final Set<String> dvFields;
 
+    @Override
+    public FieldInfos getFieldInfos() {
+        FieldInfos original = super.getFieldInfos();
+        FieldInfo[] modified = new FieldInfo[original.size()];
+        int index = 0;
+        for (FieldInfo oInfo: original) {
+            if (dvFields.contains(oInfo.name)) {
+                // TODO: Infer the type or get it from arguments
+                FieldInfo.DocValuesType mDocValuesType = oInfo.getDocValuesType();
+                //
+                FieldInfo mInfo = new FieldInfo(
+                        oInfo.name, oInfo.isIndexed(), oInfo.number, oInfo.hasVectors(),
+                        oInfo.omitsNorms(), oInfo.hasPayloads(), oInfo.getIndexOptions(),
+                        mDocValuesType, oInfo.getNormType(), oInfo.attributes());
+                modified[index++] = mInfo;
+            } else {
+                modified[index++] = oInfo;
+            }
+        }
+        return new FieldInfos(modified);
+    }
+
+    @Override
+    public Fields fields() throws IOException {
+        return super.fields();    // TODO: Implement this
+    }
+
     public DVAtomicReader(AtomicReader in, Set<String> dvFields) {
         super(in);
         this.dvFields = dvFields;
@@ -37,6 +64,9 @@ public class DVAtomicReader extends FilterAtomicReader {
 
     @Override
     public NumericDocValues getNumericDocValues(String field) throws IOException {
+        if (!dvFields.contains(field)) {
+            return super.getNumericDocValues(field);
+        }
         NumericDocValues dv = super.getNumericDocValues(field);
         log.info("getNumericDocValues called for field '" + field + "'. Has DV: " + (dv != null));
         return dv;
@@ -44,6 +74,9 @@ public class DVAtomicReader extends FilterAtomicReader {
 
     @Override
     public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+        if (!dvFields.contains(field)) {
+            return super.getBinaryDocValues(field);
+        }
         BinaryDocValues dv = super.getBinaryDocValues(field);
         log.info("getBinaryDocValues called for field '" + field + "'. Has DV: " + (dv != null));
         return dv;
@@ -65,6 +98,9 @@ public class DVAtomicReader extends FilterAtomicReader {
 
     @Override
     public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+        if (!dvFields.contains(field)) {
+            return super.getSortedSetDocValues(field);
+        }
         SortedSetDocValues dv = super.getSortedSetDocValues(field);
         log.info("getSortedSetDocValues called for field '" + field + "'. Has DV: " + (dv != null));
         return dv;
