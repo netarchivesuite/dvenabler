@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Set;
 
 public class DVReaderTest extends TestCase {
     private static Log log = LogFactory.getLog(DVReaderTest.class);
@@ -53,64 +54,106 @@ public class DVReaderTest extends TestCase {
 
 
     private static final Version LUCENE_VERSION = Version.LUCENE_48;
-    
+
     public void testCreateAndReadPlainIndex() throws IOException, ParseException {
         log.info("testCreateAndReadPlainIndex started");
         final File INDEX = generateIndex();
-        Directory directory = MMapDirectory.open(INDEX);
-        IndexReader reader = DirectoryReader.open(directory);
-        IndexSearcher searcher = new IndexSearcher(reader);
-
-        assertIndexValues(INDEX, reader, searcher, false);
+        try {
+            assertIndexValues(INDEX, false);
+        } finally {
+            delete(INDEX);
+        }
     }
 
     public void testCreateAndReadWrappedIndex() throws IOException, ParseException {
         log.info("testCreateAndReadPlainIndex started");
         final File INDEX = generateIndex();
-        Directory directory = MMapDirectory.open(INDEX);
-        IndexReader reader = new DVDirectoryReader(
-                DirectoryReader.open(directory),
-                new HashSet<String>(Arrays.asList(STORED)));
-        IndexSearcher searcher = new IndexSearcher(reader);
+        try {
+            Directory directory = MMapDirectory.open(INDEX);
+            IndexReader reader = new DVDirectoryReader(
+                    DirectoryReader.open(directory),
+                    new HashSet<String>(Arrays.asList(STORED)));
+            IndexSearcher searcher = new IndexSearcher(reader);
 
-        assertIndexValues(INDEX, reader, searcher, true);
+            assertIndexValues(reader, searcher, true);
+        } finally {
+            delete(INDEX);
+        }
     }
 
-    private void assertIndexValues(File index, IndexReader reader, IndexSearcher searcher, boolean dvExpected)
-            throws ParseException, IOException {
-        try {
-            final String M = "dvExpected=" + dvExpected + ". ";
+    public void testDVEnableIndex() throws IOException, ParseException {
+        log.info("testCreateAndReadPlainIndex started");
+
+        final File INDEX_SRC = generateIndex();
+        final File INDEX_DEST = new File("target/testindex.deletefreely2");
+        final Set<String> dvFields = new HashSet<String>(Arrays.asList(STORED, LONG, DOUBLE));
+        {
+            IndexReader dvReader = new DVDirectoryReader(
+                    DirectoryReader.open(MMapDirectory.open(INDEX_SRC)), dvFields);
             Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
-            QueryParser queryParser = new QueryParser(LUCENE_VERSION, SEARCH, analyzer);
-            Query query = queryParser.parse(SEARCH_CONTENT);
-            TopDocs topDocs = searcher.search(query, 10);
-            assertEquals(M + "Search for 'somecontent' should give the right number of results", 1, topDocs.totalHits);
-            Document doc = reader.document(topDocs.scoreDocs[0].doc);
+            IndexWriter writer = new IndexWriter(
+                    MMapDirectory.open(INDEX_DEST), new IndexWriterConfig(LUCENE_VERSION, analyzer));
 
-            assertEquals(M + "The stored value for the document should be correct", STORED_CONTENT, doc.get(STORED));
-            assertEquals(M + "The stored long value for the document should be correct",
-                         Long.toString(LONG_CONTENT), doc.get(LONG));
-            assertEquals(M + "The stored double value for the document should be correct",
-                         Double.toString(DOUBLE_CONTENT), doc.get(DOUBLE));
+            writer.addIndexes(dvReader);
+            writer.commit();
+            writer.close(); // No need for optimize as the addIndexes + commit ensures transformation
+            dvReader.close();
+        }
+        try {
+            assertIndexValues(INDEX_SRC, false);
+            assertIndexValues(INDEX_DEST, true);
+        } finally {
+            delete(INDEX_SRC);
+            delete(INDEX_DEST);
+        }
+    }
 
-            String dv = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, DV);
-            assertEquals("The plain DocValues content for the document should be correct", DV_CONTENT, dv);
-            try {
-                String nonexistingDV = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, STORED);
-                if (!dvExpected) {
-                    fail(M + "Requesting the DocValue from the non-DV field " + STORED
-                         + " should have failed but returned " + nonexistingDV);
-                }
-                assertEquals("Requesting DV from a stored field should work due to the wrapper",
-                             STORED_CONTENT, nonexistingDV);
-            } catch (Exception e) {
-                if (dvExpected) {
-                    fail(M + "There should have been a value for " + STORED);
-                }
-            }
+    private void assertIndexValues(File index, boolean dvExpected) throws IOException, ParseException {
+        IndexReader reader = DirectoryReader.open(MMapDirectory.open(index));
+        IndexSearcher searcher = new IndexSearcher(reader);
+        try {
+            assertIndexValues(reader, searcher, dvExpected);
         } finally {
             reader.close();
-            delete(index);
+        }
+    }
+
+    private void assertIndexValues(IndexReader reader, boolean dvExpected) throws IOException, ParseException {
+        IndexSearcher searcher = new IndexSearcher(reader);
+        assertIndexValues(reader, searcher, dvExpected);
+    }
+
+    private void assertIndexValues(IndexReader reader, IndexSearcher searcher, boolean dvExpected)
+            throws ParseException, IOException {
+
+        final String M = "dvExpected=" + dvExpected + ". ";
+        Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
+        QueryParser queryParser = new QueryParser(LUCENE_VERSION, SEARCH, analyzer);
+        Query query = queryParser.parse(SEARCH_CONTENT);
+        TopDocs topDocs = searcher.search(query, 10);
+        assertEquals(M + "Search for 'somecontent' should give the right number of results", 1, topDocs.totalHits);
+        Document doc = reader.document(topDocs.scoreDocs[0].doc);
+
+        assertEquals(M + "The stored value for the document should be correct", STORED_CONTENT, doc.get(STORED));
+        assertEquals(M + "The stored long value for the document should be correct",
+                     Long.toString(LONG_CONTENT), doc.get(LONG));
+        assertEquals(M + "The stored double value for the document should be correct",
+                     Double.toString(DOUBLE_CONTENT), doc.get(DOUBLE));
+
+        String dv = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, DV);
+        assertEquals("The plain DocValues content for the document should be correct", DV_CONTENT, dv);
+        try {
+            String nonexistingDV = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, STORED);
+            if (!dvExpected) {
+                fail(M + "Requesting the DocValue from the non-DV field " + STORED
+                     + " should have failed but returned " + nonexistingDV);
+            }
+            assertEquals("Requesting DV from a stored field should work due to the wrapper",
+                         STORED_CONTENT, nonexistingDV);
+        } catch (Exception e) {
+            if (dvExpected) {
+                fail(M + "There should have been a value for " + STORED);
+            }
         }
     }
 
