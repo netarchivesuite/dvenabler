@@ -16,14 +16,17 @@ package dk.statsbiblioteket.netark.dvenabler;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
 import java.util.Set;
 
 /**
-*
-*/
+ *
+ */
 public class DVAtomicReader extends FilterAtomicReader {
     private static Log log = LogFactory.getLog(DVAtomicReader.class);
 
@@ -31,12 +34,20 @@ public class DVAtomicReader extends FilterAtomicReader {
 
     @Override
     public FieldInfos getFieldInfos() {
+        log.info("Wrapped getFieldInfos called");
         FieldInfos original = super.getFieldInfos();
         FieldInfo[] modified = new FieldInfo[original.size()];
         int index = 0;
         for (FieldInfo oInfo: original) {
             if (dvFields.contains(oInfo.name)) {
                 // TODO: Infer the type or get it from arguments
+                // http://www.gossamer-threads.com/lists/lucene/java-user/182641
+                FieldType.NumericType numType = inferNumericType(oInfo.name);
+                if (numType == null) {
+                    // Single or multi-value String
+                } else {
+                    // TODO: Construct DocValuesType
+                }
                 FieldInfo.DocValuesType mDocValuesType = oInfo.getDocValuesType();
                 //
                 FieldInfo mInfo = new FieldInfo(
@@ -49,6 +60,24 @@ public class DVAtomicReader extends FilterAtomicReader {
             }
         }
         return new FieldInfos(modified);
+    }
+
+    private FieldType.NumericType inferNumericType(String field) {
+        try {
+            Terms terms = fields().terms(field);
+            if (terms == null) {
+                return null;
+            }
+            TermsEnum termsEnum = terms.iterator(null);
+            BytesRef val;
+            if ((val = termsEnum.next()) == null) {
+                return null;
+            }
+            System.out.println("Got value for field " + field + ": " + val);
+        } catch (IOException e) {
+            log.warn("IOException whily trying to infer NumericType for field " + field, e);
+        }
+        return null;
     }
 
     @Override
