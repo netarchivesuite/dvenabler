@@ -45,10 +45,12 @@ public class DVReaderTest extends TestCase {
     private static final String DV_CONTENT = "dvcontent";
     private static final String SEARCH = "search";
     private static final String SEARCH_CONTENT = "searchcontent";
-    private static final String STORED = "stored";
+    private static final String STORED = "singlestring";
     private static final String STORED_CONTENT = "plainstore";
     private static final String DOUBLE = "double";
     private static final double DOUBLE_CONTENT = 12.13;
+    private static final String FLOAT = "float";
+    private static final float FLOAT_CONTENT = 18.5f;
     private static final long LONG_CONTENT = 87L;
     private static final String LONG = "long";
 
@@ -139,6 +141,8 @@ public class DVReaderTest extends TestCase {
                      Long.toString(LONG_CONTENT), doc.get(LONG));
         assertEquals(M + "The stored double value for the document should be correct",
                      Double.toString(DOUBLE_CONTENT), doc.get(DOUBLE));
+        assertEquals(M + "The stored float value for the document should be correct",
+                     Double.toString(FLOAT_CONTENT), doc.get(FLOAT));
 
         String dv = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, DV);
         assertEquals("The plain DocValues content for the document should be correct", DV_CONTENT, dv);
@@ -152,7 +156,7 @@ public class DVReaderTest extends TestCase {
                          STORED_CONTENT, nonexistingDV);
         } catch (Exception e) {
             if (dvExpected) {
-                fail(M + "There should have been a value for " + STORED);
+                fail(M + "There should have been a DV-value for field " + STORED);
             }
         }
     }
