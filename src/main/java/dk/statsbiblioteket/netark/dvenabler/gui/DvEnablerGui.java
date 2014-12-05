@@ -99,7 +99,7 @@ public class DvEnablerGui extends JFrame  {
 
 		Box box = Box.createVerticalBox(); //Empty before index is selected
 		checkBoxScrollPane = new JScrollPane(box);
-		checkBoxScrollPane.setPreferredSize(new Dimension(400, 300));
+		checkBoxScrollPane.setPreferredSize(new Dimension(600, 300));
 		getContentPane().add(checkBoxScrollPane, gbc);
 	}
 
@@ -161,7 +161,7 @@ public class DvEnablerGui extends JFrame  {
 			try{
 
 				fieldsCheckBoxList  = new ArrayList<JCheckBox>();
-				ArrayList<SchemaField> fields = IndexUtils.getFields(indexFolder);
+				ArrayList<SchemaField> fields = IndexUtils.getAllFieldsInfoFromIndex(indexFolder);
 
 				Box box = Box.createVerticalBox();
 				for (SchemaField current: fields){				
