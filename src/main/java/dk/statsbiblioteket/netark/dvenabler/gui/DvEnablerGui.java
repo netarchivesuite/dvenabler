@@ -69,7 +69,6 @@ public class DvEnablerGui extends JFrame  {
 		gbc.fill = GridBagConstraints.NONE;
 		gbc.insets = new Insets(5, 5, 5, 5);
 
-
 		gbc.gridx = 0;
 		gbc.gridy = row; // row not finished
 		gbc.gridheight = 1;
@@ -217,12 +216,8 @@ public class DvEnablerGui extends JFrame  {
 							System.out.println(current.getText() +  " is marked for DocVal");
 						}
 					}
-
-					
 					
 				}
-				
-				
 
 			}
 			catch(Exception ex){
