@@ -16,10 +16,7 @@ package dk.statsbiblioteket.netark.dvenabler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.*;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -32,28 +29,28 @@ public class NumericDocValuesWrapper extends NumericDocValues {
     private static Log log = LogFactory.getLog(NumericDocValuesWrapper.class);
 
     private final AtomicReader reader;
-    private final String field;
+    private final FieldInfo fieldInfo;
     private final Set<String> FIELDS; // Contains {@link #field} and nothing else
 
-    public NumericDocValuesWrapper(AtomicReader reader, String field) throws IOException {
+    public NumericDocValuesWrapper(AtomicReader reader, FieldInfo fieldInfo) throws IOException {
         this.reader = reader;
-        this.field = field;
-        FIELDS = new HashSet<String>(Arrays.asList(field));
+        this.fieldInfo = fieldInfo;
+        FIELDS = new HashSet<String>(Arrays.asList(fieldInfo.name));
     }
 
     @Override
     public long get(int docID) {
         try {
-            IndexableField iField = reader.document(docID, FIELDS).getField(field);
+            IndexableField iField = reader.document(docID, FIELDS).getField(fieldInfo.name);
             if (iField == null) {
-                log.trace("No stored value for field '" + field + "' in doc " + docID + ". Returning -1");
+                log.trace("No stored value for field '" + fieldInfo.name + "' in doc " + docID + ". Returning -1");
                 // TODO: Default DV-value on missing stored-value.
                 return -1;
             }
-            // TODO: Determine correct method to call from field info
+            // TODO: Determine correct method to call from field info, instead of always returning long
             return iField.numericValue().longValue();
         } catch (IOException e) {
-            throw new RuntimeException("Unable to get field '" + field + "' from docID " + docID, e);
+            throw new RuntimeException("Unable to get field '" + fieldInfo.name + "' from docID " + docID, e);
         }
     }
 }

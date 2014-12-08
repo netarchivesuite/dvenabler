@@ -33,9 +33,7 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class DVReaderTest extends TestCase {
     private static Log log = LogFactory.getLog(DVReaderTest.class);
@@ -70,11 +68,11 @@ public class DVReaderTest extends TestCase {
     public void testCreateAndReadWrappedIndex() throws IOException, ParseException {
         log.info("testCreateAndReadPlainIndex started");
         final File INDEX = generateIndex();
+
         try {
             Directory directory = MMapDirectory.open(INDEX);
             IndexReader reader = new DVDirectoryReader(
-                    DirectoryReader.open(directory),
-                    new HashSet<String>(Arrays.asList(STORED)));
+                    DirectoryReader.open(directory), createDVFieldInfos(INDEX));
             IndexSearcher searcher = new IndexSearcher(reader);
 
             assertIndexValues(reader, searcher, true);
@@ -88,26 +86,31 @@ public class DVReaderTest extends TestCase {
 
         final File INDEX_SRC = generateIndex();
         final File INDEX_DEST = new File("target/testindex.deletefreely2");
-        final Set<String> dvFields = new HashSet<String>(Arrays.asList(STORED, LONG, DOUBLE));
-        {
-            IndexReader dvReader = new DVDirectoryReader(
-                    DirectoryReader.open(MMapDirectory.open(INDEX_SRC)), dvFields);
-            Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
-            IndexWriter writer = new IndexWriter(
-                    MMapDirectory.open(INDEX_DEST), new IndexWriterConfig(LUCENE_VERSION, analyzer));
-
-            writer.addIndexes(dvReader);
-            writer.commit();
-            writer.close(); // No need for optimize as the addIndexes + commit ensures transformation
-            dvReader.close();
-        }
         try {
+            IndexUtils.convert(INDEX_SRC, INDEX_DEST, createDVFieldInfos(INDEX_SRC));
             assertIndexValues(INDEX_SRC, false);
             assertIndexValues(INDEX_DEST, true);
         } finally {
             delete(INDEX_SRC);
             delete(INDEX_DEST);
         }
+    }
+
+    private Set<FieldInfo> createDVFieldInfos(File index) throws IOException {
+        List<FieldInfo> baseFieldInfos = IndexUtils.getFieldInfos(index);
+        List<FieldInfo> dvFieldInfos = new ArrayList<FieldInfo>();
+        for (FieldInfo baseField: baseFieldInfos) {
+            if (STORED.equals(baseField.name)) {
+                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.SORTED));
+            } else if (DOUBLE.equals(baseField.name)) {
+                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.NUMERIC));
+            } else if (FLOAT.equals(baseField.name)) {
+                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.NUMERIC));
+            } else if (LONG.equals(baseField.name)) {
+                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.NUMERIC));
+            }
+        }
+        return new HashSet<FieldInfo>(dvFieldInfos);
     }
 
     private void assertIndexValues(File index, boolean dvExpected) throws IOException, ParseException {
@@ -139,13 +142,15 @@ public class DVReaderTest extends TestCase {
         assertEquals(M + "The stored value for the document should be correct", STORED_CONTENT, doc.get(STORED));
         assertEquals(M + "The stored long value for the document should be correct",
                      Long.toString(LONG_CONTENT), doc.get(LONG));
-        assertEquals(M + "The stored double value for the document should be correct",
+/*        assertEquals(M + "The stored double value for the document should be correct",
                      Double.toString(DOUBLE_CONTENT), doc.get(DOUBLE));
         assertEquals(M + "The stored float value for the document should be correct",
-                     Double.toString(FLOAT_CONTENT), doc.get(FLOAT));
+                     Double.toString(FLOAT_CONTENT), doc.get(FLOAT));*/
 
         String dv = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, DV);
         assertEquals("The plain DocValues content for the document should be correct", DV_CONTENT, dv);
+
+        // STORED (single value String)
         try {
             String nonexistingDV = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, STORED);
             if (!dvExpected) {
@@ -157,6 +162,21 @@ public class DVReaderTest extends TestCase {
         } catch (Exception e) {
             if (dvExpected) {
                 fail(M + "There should have been a DV-value for field " + STORED);
+            }
+        }
+
+        // LONG
+        try {
+            long nonexistingDV = getLongDocValue(reader, topDocs.scoreDocs[0].doc, LONG);
+            if (!dvExpected) {
+                fail(M + "Requesting the DocValue from the non-DV field " + LONG
+                     + " should have failed but returned " + nonexistingDV);
+            }
+            assertEquals("Requesting DV from a stored field should work due to the wrapper",
+                         LONG_CONTENT, nonexistingDV);
+        } catch (Exception e) {
+            if (dvExpected) {
+                fail(M + "There should have been a DV-value for field " + LONG);
             }
         }
     }
@@ -172,7 +192,6 @@ public class DVReaderTest extends TestCase {
         }
         throw new IllegalArgumentException("The docID " + docID + " exceeded the index size");
     }
-
     private String getSortedDocValue(AtomicReaderContext atomContext, int docID, String field) throws IOException {
         SortedDocValues dvs = atomContext.reader().getSortedDocValues(field);
         if (dvs == null) {
@@ -181,6 +200,25 @@ public class DVReaderTest extends TestCase {
         BytesRef result = new BytesRef();
         dvs.get(docID-atomContext.docBase, result);
         return result.utf8ToString();
+    }
+
+    private long getLongDocValue(IndexReader reader, int docID, String field) throws IOException {
+        if (!reader.getContext().isTopLevel) {
+            throw new IllegalStateException("Expected the reader to be topLevel");
+        }
+        for (AtomicReaderContext atom: reader.getContext().leaves()) {
+            if (atom.docBase <= docID && atom.docBase + atom.reader().maxDoc() > docID) {
+                return getLongDocValue(atom, docID, field);
+            }
+        }
+        throw new IllegalArgumentException("The docID " + docID + " exceeded the index size");
+    }
+    private Long getLongDocValue(AtomicReaderContext atomContext, int docID, String field) throws IOException {
+        NumericDocValues dvs = atomContext.reader().getNumericDocValues(field);
+        if (dvs == null) {
+            throw new IllegalStateException("No NumericDocValues for field '" + field + "'");
+        }
+        return dvs.get(docID);
     }
 
     public File generateIndex() throws IOException {
@@ -199,11 +237,16 @@ public class DVReaderTest extends TestCase {
         LONG_F.setStored(true);
         LONG_F.setNumericType(FieldType.NumericType.LONG);
 
-        final FieldType DOUBLE_F = new FieldType();
+/*        final FieldType DOUBLE_F = new FieldType();
         DOUBLE_F.setIndexed(true);
         DOUBLE_F.setStored(true);
         DOUBLE_F.setNumericType(FieldType.NumericType.DOUBLE);
 
+        final FieldType FLOAT_F = new FieldType();
+        FLOAT_F.setIndexed(true);
+        FLOAT_F.setStored(true);
+        FLOAT_F.setNumericType(FieldType.NumericType.FLOAT);
+  */
 
 /*        final FieldType STR_DV = new FieldType();
         STR_DV.setIndexed(true);
@@ -219,7 +262,8 @@ public class DVReaderTest extends TestCase {
             document.add(new Field(SEARCH, SEARCH_CONTENT, SEARCH_F));
             document.add(new Field(STORED, STORED_CONTENT, STORED_F));
             document.add(new LongField(LONG, LONG_CONTENT, LONG_F));
-            document.add(new DoubleField(DOUBLE, DOUBLE_CONTENT, DOUBLE_F));
+//            document.add(new DoubleField(DOUBLE, DOUBLE_CONTENT, DOUBLE_F));
+//            document.add(new FloatField(FLOAT, FLOAT_CONTENT, FLOAT_F));
             document.add(new SortedDocValuesField(DV, new BytesRef(DV_CONTENT)));
             indexWriter.addDocument(document);
         }

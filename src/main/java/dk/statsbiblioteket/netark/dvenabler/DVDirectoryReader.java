@@ -26,29 +26,30 @@ import java.util.*;
  */
 public class DVDirectoryReader extends FilterDirectoryReader {
     private static Log log = LogFactory.getLog(DVDirectoryReader.class);
-    private final Set<String> dvFields;
+    private final Set<FieldInfo> dvFields;
 
-  /**
-     * Create a DocValues-simulating reader.
-     * @param in            the Lucene DirectoryReader to wrap.
-     * @param dvFields  the fields to simulate DocValues for.
+    /**
+     * Creates an adjusting reader; removing or/and adding DocValues for the specified fields.
+     * @param innerReader the reader to wrap.
+     * @param dvFields a list of fields to adjust.
+     *                 Fields in the innerReader not specified in dvFields are passed unmodified.
      */
-    public DVDirectoryReader(DirectoryReader in, Set<String> dvFields) {
-        super(in, new TransformingAtomicReaderWrapper(dvFields));
+    public DVDirectoryReader(DirectoryReader innerReader, Set<FieldInfo> dvFields) {
+        super(innerReader, new TransformingAtomicReaderWrapper(dvFields));
         this.dvFields = dvFields;
-        log.info("Constructed DVDirectoryReader with DocValues wrapper");
+        log.info("Constructed DVDirectoryReader with " + dvFields + " DocValue field adjustments");
     }
 
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
-        log.info("Wrapping DirectoryReader");
+        log.info("Wrapping DirectoryReader with " + dvFields + " field adjustments");
         return new DVDirectoryReader(in, dvFields);
     }
 
     public static class TransformingAtomicReaderWrapper extends SubReaderWrapper {
-        private final Set<String> dvFields;
+        private final Set<FieldInfo> dvFields;
 
-        public TransformingAtomicReaderWrapper(Set<String> dvFields) {
+        public TransformingAtomicReaderWrapper(Set<FieldInfo> dvFields) {
             this.dvFields = dvFields;
         }
 
