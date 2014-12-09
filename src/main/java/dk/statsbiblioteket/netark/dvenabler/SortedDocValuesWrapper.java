@@ -58,20 +58,6 @@ public class SortedDocValuesWrapper extends SortedDocValues {
     }
 
     @Override
-    public void get(int docID, BytesRef result) {
-        try {
-            String value = reader.document(docID, FIELDS).get(field);
-            if (value == null) {
-                // TODO: What is the best action when there is no value??
-                throw new RuntimeException("Unable to get stored value for docID=" + docID + ", field=" + field);
-            }
-            result.copyChars(value);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to lookup docID=" + docID + ", field=" + field, e);
-        }
-    }
-
-    @Override
     public int getOrd(int docID) {
         try {
             String value = reader.document(docID, FIELDS).get(field);
@@ -92,7 +78,6 @@ public class SortedDocValuesWrapper extends SortedDocValues {
 
     @Override
     public void lookupOrd(int ord, BytesRef result) {
-        // TODO: Add check for -1
         result.copyChars(values.get(ord));
     }
 

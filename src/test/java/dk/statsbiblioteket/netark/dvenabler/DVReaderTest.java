@@ -43,15 +43,17 @@ public class DVReaderTest extends TestCase {
     private static final String DV_CONTENT = "dvcontent";
     private static final String SEARCH = "search";
     private static final String SEARCH_CONTENT = "searchcontent";
-    private static final String STORED = "singlestring";
-    private static final String STORED_CONTENT = "plainstore";
+    private static final String SINGLE = "singlestring";
+    private static final String SINGLE_CONTENT = "plainstoreS";
+    private static final String MULTI = "multistring";
+    private static final String MULTI_CONTENT_1 = "plainstoreM1";
+    private static final String MULTI_CONTENT_2 = "plainstoreM2";
     private static final String DOUBLE = "double";
     private static final double DOUBLE_CONTENT = 12.13;
     private static final String FLOAT = "float";
     private static final float FLOAT_CONTENT = 18.5f;
     private static final long LONG_CONTENT = 87L;
     private static final String LONG = "long";
-
 
     private static final Version LUCENE_VERSION = Version.LUCENE_48;
 
@@ -100,8 +102,10 @@ public class DVReaderTest extends TestCase {
         List<FieldInfo> baseFieldInfos = IndexUtils.getFieldInfos(index);
         List<FieldInfo> dvFieldInfos = new ArrayList<FieldInfo>();
         for (FieldInfo baseField: baseFieldInfos) {
-            if (STORED.equals(baseField.name)) {
+            if (SINGLE.equals(baseField.name)) {
                 dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.SORTED));
+            } else if (MULTI.equals(baseField.name)) {
+                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.SORTED_SET));
             } else if (DOUBLE.equals(baseField.name)) {
                 dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.NUMERIC));
             } else if (FLOAT.equals(baseField.name)) {
@@ -139,9 +143,14 @@ public class DVReaderTest extends TestCase {
         assertEquals(M + "Search for 'somecontent' should give the right number of results", 1, topDocs.totalHits);
         Document doc = reader.document(topDocs.scoreDocs[0].doc);
 
-        assertEquals(M + "The stored value for the document should be correct", STORED_CONTENT, doc.get(STORED));
+        assertEquals(M + "The stored value for the document should be correct", SINGLE_CONTENT, doc.get(SINGLE));
         assertEquals(M + "The stored long value for the document should be correct",
                      Long.toString(LONG_CONTENT), doc.get(LONG));
+        for (String value: Arrays.asList(MULTI_CONTENT_1, MULTI_CONTENT_2)) {
+            assertTrue("The value " + value + " should be stored in field " + MULTI,
+                       Arrays.asList(doc.getValues(MULTI)).contains(value));
+        }
+
 /*        assertEquals(M + "The stored double value for the document should be correct",
                      Double.toString(DOUBLE_CONTENT), doc.get(DOUBLE));
         assertEquals(M + "The stored float value for the document should be correct",
@@ -150,18 +159,18 @@ public class DVReaderTest extends TestCase {
         String dv = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, DV);
         assertEquals("The plain DocValues content for the document should be correct", DV_CONTENT, dv);
 
-        // STORED (single value String)
+        // SINGLE (single value String)
         try {
-            String nonexistingDV = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, STORED);
+            String nonexistingDV = getSortedDocValue(reader, topDocs.scoreDocs[0].doc, SINGLE);
             if (!dvExpected) {
-                fail(M + "Requesting the DocValue from the non-DV field " + STORED
+                fail(M + "Requesting the DocValue from the non-DV field " + SINGLE
                      + " should have failed but returned " + nonexistingDV);
             }
             assertEquals("Requesting DV from a stored field should work due to the wrapper",
-                         STORED_CONTENT, nonexistingDV);
+                         SINGLE_CONTENT, nonexistingDV);
         } catch (Exception e) {
             if (dvExpected) {
-                fail(M + "There should have been a DV-value for field " + STORED);
+                fail(M + "There should have been a DV-value for field " + SINGLE);
             }
         }
 
@@ -179,7 +188,56 @@ public class DVReaderTest extends TestCase {
                 fail(M + "There should have been a DV-value for field " + LONG);
             }
         }
+
+        // MULTI (multi value String)
+        try {
+            List<String> dvs = getSortedSetDocValues(reader, topDocs.scoreDocs[0].doc, MULTI);
+            if (!dvExpected) {
+                fail(M + "Requesting the SortedSet DocValues from the non-DV field " + SINGLE
+                     + " should have failed but returned " + dvs);
+            }
+            assertEquals("The number of returned DVs for field " + MULTI + " should match",
+                         2, dvs.size());
+            for (String value: Arrays.asList(MULTI_CONTENT_1, MULTI_CONTENT_2)) {
+                assertTrue("The value " + value + " should be DocValued in field " + MULTI,
+                           dvs.contains(value));
+            }
+        } catch (Exception e) {
+            if (dvExpected) {
+                fail(M + "There should have been a DV-value for field " + MULTI);
+            }
+        }
+
     }
+
+    private List<String> getSortedSetDocValues(IndexReader reader, int docID, String field) throws IOException {
+        if (!reader.getContext().isTopLevel) {
+            throw new IllegalStateException("Expected the reader to be topLevel");
+        }
+        for (AtomicReaderContext atom: reader.getContext().leaves()) {
+            if (atom.docBase <= docID && atom.docBase + atom.reader().maxDoc() > docID) {
+                return getSortedSetDocValues(atom, docID, field);
+            }
+        }
+        throw new IllegalArgumentException("The docID " + docID + " exceeded the index size");
+    }
+    private List<String> getSortedSetDocValues(
+            AtomicReaderContext atomContext, int docID, String field) throws IOException {
+        SortedSetDocValues dvs = atomContext.reader().getSortedSetDocValues(field);
+        if (dvs == null) {
+            throw new IllegalStateException("No SortedSetDocValues for field '" + field + "'");
+        }
+        dvs.setDocument(docID);
+        List<String> values = new ArrayList<String>();
+        BytesRef result = new BytesRef();
+        long ord;
+        while ((ord = dvs.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+            dvs.lookupOrd(ord, result);
+            values.add(result.utf8ToString());
+        }
+        return values;
+    }
+
 
     private String getSortedDocValue(IndexReader reader, int docID, String field) throws IOException {
         if (!reader.getContext().isTopLevel) {
@@ -225,9 +283,13 @@ public class DVReaderTest extends TestCase {
         final File INDEX = new File("target/testindex.deletefreely");
         Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
 
-        final FieldType STORED_F = new FieldType();
-        STORED_F.setIndexed(true);
-        STORED_F.setStored(true);
+        final FieldType SINGLE_F = new FieldType();
+        SINGLE_F.setIndexed(true);
+        SINGLE_F.setStored(true);
+
+        final FieldType MULTI_F = new FieldType();
+        MULTI_F.setIndexed(true);
+        MULTI_F.setStored(true);
 
         final FieldType SEARCH_F = new FieldType();
         SEARCH_F.setIndexed(true);
@@ -258,9 +320,11 @@ public class DVReaderTest extends TestCase {
                                                   new IndexWriterConfig(LUCENE_VERSION, analyzer));
         {
             Document document = new Document();
-            document.add(new Field(ID, "1", STORED_F));
+            document.add(new Field(ID, "1", MULTI_F));
             document.add(new Field(SEARCH, SEARCH_CONTENT, SEARCH_F));
-            document.add(new Field(STORED, STORED_CONTENT, STORED_F));
+            document.add(new Field(SINGLE, SINGLE_CONTENT, MULTI_F));
+            document.add(new Field(MULTI, MULTI_CONTENT_1, MULTI_F));
+            document.add(new Field(MULTI, MULTI_CONTENT_2, MULTI_F));
             document.add(new LongField(LONG, LONG_CONTENT, LONG_F));
 //            document.add(new DoubleField(DOUBLE, DOUBLE_CONTENT, DOUBLE_F));
 //            document.add(new FloatField(FLOAT, FLOAT_CONTENT, FLOAT_F));

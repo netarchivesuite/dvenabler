@@ -112,49 +112,73 @@ public class DVAtomicReader extends FilterAtomicReader {
 
     @Override
     public NumericDocValues getNumericDocValues(String field) throws IOException {
+        log.debug("getNumericDocValues(" + field + ") called");
         if (!dvFields.containsKey(field)) {
             return super.getNumericDocValues(field);
+        } else if (!dvFields.get(field).hasDocValues()) {
+            return null;
         }
-        // TODO: Implement this
         NumericDocValues dv = super.getNumericDocValues(field);
-        log.info("getNumericDocValues called for field '" + field + "'. Has DV: " + (dv != null));
-        return new NumericDocValuesWrapper(this, dvFields.get(field));
+        if (dv != null) {
+            log.info("getNumericDocValues called for field '" + field + "'. DV already present, returning directly");
+            return dv;
+        }
+        log.info("getNumericDocValues called for field '" + field + "' with no DV. Constructing from stored");
+        // TODO: Infer whether this is long, int, double or float
+        return new NumericDocValuesWrapper(this, dvFields.get(field), FieldType.NumericType.LONG);
     }
 
     @Override
     public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+        log.debug("getBinaryDocValues(" + field + ") called");
         if (!dvFields.containsKey(field)) {
             return super.getBinaryDocValues(field);
+        } else if (!dvFields.get(field).hasDocValues()) {
+            return null;
         }
         // TODO: Implement this
         BinaryDocValues dv = super.getBinaryDocValues(field);
-        log.info("getBinaryDocValues called for field '" + field + "'. Has DV: " + (dv != null));
+        if (dv != null) {
+            log.info("getBinaryDocValues called for field '" + field + "'. DV already present, returning directly");
+            return dv;
+        }
+        log.info("getBinaryDocValues called for field '" + field + "' with no DV. Constructing from stored");
+        // TODO: Implement this
         return dv;
     }
 
     @Override
     public SortedDocValues getSortedDocValues(String field) throws IOException {
+        log.debug("getSortedDocValues(" + field + ") called");
         if (!dvFields.containsKey(field)) {
             return super.getSortedDocValues(field);
+        } else if (!dvFields.get(field).hasDocValues()) {
+            return null;
         }
         SortedDocValues dv = super.getSortedDocValues(field);
         if (dv != null) {
             log.info("getSortedDocValues called for field '" + field + "'. DV already present, returning directly");
             return dv;
         }
-
+        log.info("getSortedDocValues called for field '" + field + "' with no DV. Constructing from stored");
         return new SortedDocValuesWrapper(this, field);
     }
 
     @Override
     public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+        log.debug("getSortedSetDocValues(" + field + ") called");
         if (!dvFields.containsKey(field)) {
             return super.getSortedSetDocValues(field);
+        } else if (!dvFields.get(field).hasDocValues()) {
+            return null;
         }
-        // TODO: Implement this
         SortedSetDocValues dv = super.getSortedSetDocValues(field);
-        log.info("getSortedSetDocValues called for field '" + field + "'. Has DV: " + (dv != null));
-        return dv;
+        if (dv != null) {
+            log.info("getSortedSetDocValues called for field '" + field + "'. DV already present, returning directly");
+            return dv;
+        }
+        log.info("getSortedSetDocValues called for field '" + field + "' with no DV. Constructing from stored");
+        return new SortedSetDocValuesWrapper(this, field);
     }
 
     @Override
