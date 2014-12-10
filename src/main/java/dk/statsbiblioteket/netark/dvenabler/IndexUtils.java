@@ -11,10 +11,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 
-import dk.statsbiblioteket.netark.dvenabler.gui.SchemaField;
 import org.apache.lucene.util.Version;
 
 public class IndexUtils {
