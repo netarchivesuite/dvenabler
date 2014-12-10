@@ -38,6 +38,15 @@ public class LuceneFieldGuiPanel extends JPanel{
             add(docValTypesList);                  
     }
      
+    
+    public JComboBox<DocValuesTypeGUI> getDocValueTypesList(){
+        return docValTypesList;
+    }
+    
+    public  DVConfig getLuceneField(){
+        return luceneField;
+    }
+    
     public static enum DocValuesTypeGUI {       
         NO_DOCVAL,     
         NUMERIC_INT,       
