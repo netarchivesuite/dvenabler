@@ -64,7 +64,9 @@ public class IndexUtils {
                     dvConfigs.put(fieldInfo.name, new DVConfig(fieldInfo, FieldType.NumericType.LONG));
                 }
             }
-            return new ArrayList<DVConfig>(dvConfigs.values());
+            List<DVConfig> configs = new ArrayList<DVConfig>(dvConfigs.values());
+            Collections.sort(configs);
+            return configs;
         } finally {
             reader.close();
         }
