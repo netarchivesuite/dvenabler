@@ -22,13 +22,24 @@ import org.apache.lucene.index.FieldInfo;
  * what should happen.
  */
 public class DVConfig implements Comparable<DVConfig>{
-    
+
     private FieldInfo fieldInfo;
     private FieldType.NumericType numericType; // Only relevant when {@link FieldInfo#getDocValuesType} == NUMERIC
+    private final boolean verbose;
+    private final String firstValue;
 
     public DVConfig(FieldInfo fieldInfo, FieldType.NumericType numericType) {
         this.fieldInfo = fieldInfo;
         this.numericType = numericType;
+        verbose = false;
+        this.firstValue = null;
+    }
+
+    public DVConfig(FieldInfo fieldInfo, FieldType.NumericType numericType, String firstValue) {
+        this.fieldInfo = fieldInfo;
+        this.numericType = numericType;
+        verbose = true;
+        this.firstValue = firstValue;
     }
 
     public FieldInfo getFieldInfo() {
@@ -49,6 +60,14 @@ public class DVConfig implements Comparable<DVConfig>{
 
     public String getName() {
         return fieldInfo.name;
+    }
+
+    /**
+     * Only available if the extended constructor has been used.
+     * @return the first value in the field.
+     */
+    public String getFirstValue() {
+        return firstValue;
     }
 
     /**
@@ -82,8 +101,25 @@ public class DVConfig implements Comparable<DVConfig>{
         return fieldInfo.hasDocValues();
     }
 
-    public int compareTo(DVConfig other) {                
+    @Override
+    public int compareTo(DVConfig other) {
         return this.fieldInfo.name.compareTo(other.fieldInfo.name);
-    }   
+    }
 
+    @Override
+    public String toString() {
+        return toString(false);
+    }
+    public String toString(boolean verbose) {
+        return verbose && this.verbose ?
+                String.format("DVConfig(field=%s, DV=%s, NumericType=%s, firstIndexed='%s')",
+                              getName(),
+                              hasDocValues() ? getFieldInfo().getDocValuesType() : "No",
+                              !hasDocValues() || getNumericType() == null ? "N/A" : getNumericType(),
+                              firstValue) :
+                String.format("DVConfig(field=%s, DV=%s, NumericType=%s)",
+                              getName(),
+                              hasDocValues() ? getFieldInfo().getDocValuesType() : "No",
+                              !hasDocValues() || getNumericType() == null ? "N/A" : getNumericType());
+    }
 }

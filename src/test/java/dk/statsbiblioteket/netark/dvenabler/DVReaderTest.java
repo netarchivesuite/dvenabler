@@ -280,7 +280,7 @@ public class DVReaderTest extends TestCase {
         return dvs.get(docID);
     }
 
-    public File generateIndex() throws IOException {
+    public static File generateIndex() throws IOException {
         final File INDEX = new File("target/testindex.deletefreely");
         Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
 
@@ -337,7 +337,7 @@ public class DVReaderTest extends TestCase {
         return INDEX;
     }
 
-    private void delete(File path) {
+    public static void delete(File path) {
         File[] subs = path.listFiles();
         if (subs != null) {
             for (File subPath: subs) {

@@ -13,7 +13,10 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.MMapDirectory;
 
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.Version;
+import org.omg.DynamicAny._DynFixedStub;
 
 public class IndexUtils {
     private static Log log = LogFactory.getLog(IndexUtils.class);
@@ -61,7 +64,11 @@ public class IndexUtils {
             Map<String, DVConfig> dvConfigs = new HashMap<String, DVConfig>();
             for (AtomicReaderContext context : reader.leaves()) {
                 for (FieldInfo fieldInfo : context.reader().getFieldInfos()) {
-                    dvConfigs.put(fieldInfo.name, new DVConfig(fieldInfo, FieldType.NumericType.LONG));
+                    if (dvConfigs.containsKey(fieldInfo.name)) {
+                        continue;
+                    }
+                    String first = getFirst(context.reader(), fieldInfo.name);
+                    dvConfigs.put(fieldInfo.name, new DVConfig(fieldInfo, FieldType.NumericType.LONG, first));
                 }
             }
             List<DVConfig> configs = new ArrayList<DVConfig>(dvConfigs.values());
@@ -70,6 +77,15 @@ public class IndexUtils {
         } finally {
             reader.close();
         }
+    }
+
+    private static String getFirst(AtomicReader reader, String field) throws IOException {
+        Terms terms = reader.fields().terms(field);
+        if (terms == null) {
+            return "<No terms>";
+        }
+        BytesRef first = terms.iterator(null).next();
+        return first == null ? "N/A" : first.utf8ToString();
     }
 
 }
