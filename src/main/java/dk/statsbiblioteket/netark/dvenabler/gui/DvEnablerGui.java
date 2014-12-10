@@ -1,7 +1,5 @@
 package dk.statsbiblioteket.netark.dvenabler.gui;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -24,8 +22,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.border.BevelBorder;
-
-import org.apache.lucene.index.FieldInfo;
 
 import dk.statsbiblioteket.netark.dvenabler.DVConfig;
 import dk.statsbiblioteket.netark.dvenabler.IndexUtils;

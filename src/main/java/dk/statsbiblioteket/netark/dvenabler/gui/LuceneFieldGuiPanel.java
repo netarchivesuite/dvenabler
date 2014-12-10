@@ -6,8 +6,6 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import org.apache.lucene.index.FieldInfo;
-
 import dk.statsbiblioteket.netark.dvenabler.DVConfig;
 
 public class LuceneFieldGuiPanel extends JPanel{
