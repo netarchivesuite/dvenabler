@@ -49,12 +49,19 @@ public class NumericDocValuesWrapper extends NumericDocValues {
                 // This should have been handled by {@link DVAtomicReader#getDocsWithField}
                 return -1;
             }
+            Number number = iField.numericValue();
+            if (number == null) {
+                log.warn("No numeric value '" + iField.stringValue() + "' for field '" + dvConfig.getName()
+                         + "' in doc " + docID + ". This looks like a non-numeric field! Returning -1");
+                // This should have been handled by {@link DVAtomicReader#getDocsWithField}
+                return -1;
+            }
             // TODO: Determine correct method to call from field info
             switch (dvConfig.getNumericType()) {
-                case LONG: return iField.numericValue().longValue();
-                case INT: return iField.numericValue().intValue();
-                case DOUBLE: return Double.doubleToLongBits(iField.numericValue().doubleValue());
-                case FLOAT: return Float.floatToIntBits(iField.numericValue().longValue());
+                case LONG: return number.longValue();
+                case INT: return number.intValue();
+                case DOUBLE: return Double.doubleToLongBits(number.doubleValue());
+                case FLOAT: return Float.floatToIntBits(number.longValue());
                 default: throw new IllegalStateException(
                         "Unknown NumericType " + dvConfig.getNumericType()
                         + " for field " + dvConfig.getName());
