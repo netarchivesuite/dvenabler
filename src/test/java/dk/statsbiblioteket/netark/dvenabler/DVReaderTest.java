@@ -118,7 +118,7 @@ public class DVReaderTest extends TestCase {
         return new HashSet<DVConfig>(dvConfigs);
     }
 
-    private void assertIndexValues(File index, boolean dvExpected) throws IOException, ParseException {
+    public static void assertIndexValues(File index, boolean dvExpected) throws IOException, ParseException {
         IndexReader reader = DirectoryReader.open(MMapDirectory.open(index));
         IndexSearcher searcher = new IndexSearcher(reader);
         try {
@@ -128,12 +128,12 @@ public class DVReaderTest extends TestCase {
         }
     }
 
-    private void assertIndexValues(IndexReader reader, boolean dvExpected) throws IOException, ParseException {
+    private static void assertIndexValues(IndexReader reader, boolean dvExpected) throws IOException, ParseException {
         IndexSearcher searcher = new IndexSearcher(reader);
         assertIndexValues(reader, searcher, dvExpected);
     }
 
-    private void assertIndexValues(IndexReader reader, IndexSearcher searcher, boolean dvExpected)
+    private static void assertIndexValues(IndexReader reader, IndexSearcher searcher, boolean dvExpected)
             throws ParseException, IOException {
 
         final String M = "dvExpected=" + dvExpected + ". ";
@@ -211,7 +211,7 @@ public class DVReaderTest extends TestCase {
 
     }
 
-    private List<String> getSortedSetDocValues(IndexReader reader, int docID, String field) throws IOException {
+    private static List<String> getSortedSetDocValues(IndexReader reader, int docID, String field) throws IOException {
         if (!reader.getContext().isTopLevel) {
             throw new IllegalStateException("Expected the reader to be topLevel");
         }
@@ -222,7 +222,7 @@ public class DVReaderTest extends TestCase {
         }
         throw new IllegalArgumentException("The docID " + docID + " exceeded the index size");
     }
-    private List<String> getSortedSetDocValues(
+    private static List<String> getSortedSetDocValues(
             AtomicReaderContext atomContext, int docID, String field) throws IOException {
         SortedSetDocValues dvs = atomContext.reader().getSortedSetDocValues(field);
         if (dvs == null) {
@@ -240,7 +240,7 @@ public class DVReaderTest extends TestCase {
     }
 
 
-    private String getSortedDocValue(IndexReader reader, int docID, String field) throws IOException {
+    private static String getSortedDocValue(IndexReader reader, int docID, String field) throws IOException {
         if (!reader.getContext().isTopLevel) {
             throw new IllegalStateException("Expected the reader to be topLevel");
         }
@@ -251,7 +251,8 @@ public class DVReaderTest extends TestCase {
         }
         throw new IllegalArgumentException("The docID " + docID + " exceeded the index size");
     }
-    private String getSortedDocValue(AtomicReaderContext atomContext, int docID, String field) throws IOException {
+    private static String getSortedDocValue(
+            AtomicReaderContext atomContext, int docID, String field) throws IOException {
         SortedDocValues dvs = atomContext.reader().getSortedDocValues(field);
         if (dvs == null) {
             throw new IllegalStateException("No SortedDocValues for field '" + field + "'");
@@ -261,7 +262,7 @@ public class DVReaderTest extends TestCase {
         return result.utf8ToString();
     }
 
-    private long getLongDocValue(IndexReader reader, int docID, String field) throws IOException {
+    private static long getLongDocValue(IndexReader reader, int docID, String field) throws IOException {
         if (!reader.getContext().isTopLevel) {
             throw new IllegalStateException("Expected the reader to be topLevel");
         }
@@ -272,7 +273,7 @@ public class DVReaderTest extends TestCase {
         }
         throw new IllegalArgumentException("The docID " + docID + " exceeded the index size");
     }
-    private Long getLongDocValue(AtomicReaderContext atomContext, int docID, String field) throws IOException {
+    private static Long getLongDocValue(AtomicReaderContext atomContext, int docID, String field) throws IOException {
         NumericDocValues dvs = atomContext.reader().getNumericDocValues(field);
         if (dvs == null) {
             throw new IllegalStateException("No NumericDocValues for field '" + field + "'");
