@@ -1,5 +1,7 @@
 package dk.statsbiblioteket.netark.dvenabler.gui;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -8,6 +10,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -21,6 +24,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.border.BevelBorder;
+
+import org.apache.lucene.index.FieldInfo;
 
 import dk.statsbiblioteket.netark.dvenabler.IndexUtils;
 
@@ -123,7 +128,7 @@ public class DvEnablerGui extends JFrame  {
 	}
 
 
-	public void showError(Exception e) {
+	public void showError(Throwable e) {
 		e.printStackTrace();
 		JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.WARNING_MESSAGE);
 	}
@@ -160,29 +165,21 @@ public class DvEnablerGui extends JFrame  {
 			try{
 
 				fieldsCheckBoxList  = new ArrayList<JCheckBox>();
-				ArrayList<SchemaField> fields = IndexUtils.getAllFieldsInfoFromIndex(indexFolder);
-
+	    		 List<FieldInfo> fieldInfoList = IndexUtils.getFieldInfos(new File(indexFolder));
+				  
 				Box box = Box.createVerticalBox();
-				for (SchemaField current: fields){				
-					JCheckBox checkBox = new JCheckBox(current.getName() +", "+current.getType());
-//					checkBox.setText(current.getName());
-					fieldsCheckBoxList.add(checkBox);
-					System.out.println("iterating over:"+current.getName());
-					if (current.isDocVal()){
-						checkBox.setSelected(true);
-					}
-					if (!current.isStored()){
-						checkBox.setEnabled(false); //Can not generate docvalues for non-stored fields
-					}			  
-					box.add(checkBox);
+				for (FieldInfo current: fieldInfoList){				
+					LuceneFieldGuiPanel luceneFieldGui = new LuceneFieldGuiPanel(current); 			  
+				
+					box.add(luceneFieldGui);
 				}
-
+			  
 				checkBoxScrollPane.add(box);      
 				checkBoxScrollPane.setViewportView(box);    
 				checkBoxScrollPane.repaint();
 
 			}
-			catch(Exception ex){
+			catch(Throwable ex){
 				showError(ex);
 			}
 
@@ -191,7 +188,6 @@ public class DvEnablerGui extends JFrame  {
 
 
 	class IndexBuilderActionListener implements ActionListener{
-
 		public void actionPerformed(ActionEvent e) {        
 
 			try{

@@ -13,7 +13,7 @@ public class IndexUtilsTest extends TestCase {
         
     public void testReadFieldsFromIndex() throws Exception {
         
-        IndexUtils.getAllFieldsFromIndex("/home/teg/Desktop/solr-4.7.0/example/solr/collection1/data/index");
+       // IndexUtils.getAllFieldsFromIndex("/home/teg/Desktop/solr-4.7.0/example/solr/collection1/data/index");
         
         
         
