@@ -1,11 +1,14 @@
 package dk.statsbiblioteket.netark.dvenabler.gui;
 
 import java.awt.FlowLayout;
+
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import org.apache.lucene.index.FieldInfo;
+
+import dk.statsbiblioteket.netark.dvenabler.DVConfig;
 
 public class LuceneFieldGuiPanel extends JPanel{
  
@@ -14,9 +17,9 @@ public class LuceneFieldGuiPanel extends JPanel{
     private JLabel fieldName;
     private JComboBox<DocValuesTypeGUI> docValTypesList;
      
-    private FieldInfo luceneField;
+    private DVConfig luceneField;
         
-    public LuceneFieldGuiPanel(FieldInfo luceneField){            
+    public LuceneFieldGuiPanel(DVConfig luceneField){            
         FlowLayout flowLayout = new FlowLayout();
         flowLayout.setAlignment(FlowLayout.LEFT);
         setLayout(flowLayout);
@@ -25,9 +28,9 @@ public class LuceneFieldGuiPanel extends JPanel{
             //setBorder(BorderFactory.createEmptyBorder(0,10,10,10));            
             docValTypesList= new JComboBox<DocValuesTypeGUI>(DocValuesTypeGUI.values());                                           
             docValTypesList.setSelectedIndex(0);
-            fieldName = new JLabel(luceneField.name);                      
+            fieldName = new JLabel(luceneField.getFieldInfo().name);                      
             if (luceneField.hasDocValues()){          
-            docValTypesList.setSelectedIndex(1); //user has to pick the correct one
+               docValTypesList.setSelectedIndex(1); //user has to pick the correct one
             }
             else{
                                 

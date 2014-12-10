@@ -27,6 +27,7 @@ import javax.swing.border.BevelBorder;
 
 import org.apache.lucene.index.FieldInfo;
 
+import dk.statsbiblioteket.netark.dvenabler.DVConfig;
 import dk.statsbiblioteket.netark.dvenabler.IndexUtils;
 
 
@@ -165,10 +166,10 @@ public class DvEnablerGui extends JFrame  {
 			try{
 
 				fieldsCheckBoxList  = new ArrayList<JCheckBox>();
-	    		 List<FieldInfo> fieldInfoList = IndexUtils.getFieldInfos(new File(indexFolder));
+	    		  List<DVConfig> fieldInfoList = IndexUtils.getDVConfigs(new File(indexFolder));
 				  
 				Box box = Box.createVerticalBox();
-				for (FieldInfo current: fieldInfoList){				
+				for (DVConfig current: fieldInfoList){				
 					LuceneFieldGuiPanel luceneFieldGui = new LuceneFieldGuiPanel(current); 			  
 				
 					box.add(luceneFieldGui);
