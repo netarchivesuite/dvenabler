@@ -103,7 +103,7 @@ public class DVConfig implements Comparable<DVConfig>{
 
     @Override
     public int compareTo(DVConfig other) {
-        return this.fieldInfo.name.compareTo(other.fieldInfo.name);
+        return this.getName().compareTo(other.getName());
     }
 
     @Override
