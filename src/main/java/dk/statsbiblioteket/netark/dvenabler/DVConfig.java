@@ -21,7 +21,8 @@ import org.apache.lucene.index.FieldInfo;
  * As FieldInfo does not contain enough information for the wrapper to work, we use this class to describe
  * what should happen.
  */
-public class DVConfig {
+public class DVConfig implements Comparable<DVConfig>{
+    
     private FieldInfo fieldInfo;
     private FieldType.NumericType numericType; // Only relevant when {@link FieldInfo#getDocValuesType} == NUMERIC
 
@@ -80,4 +81,9 @@ public class DVConfig {
     public boolean hasDocValues() {
         return fieldInfo.hasDocValues();
     }
+
+    public int compareTo(DVConfig other) {                
+        return this.fieldInfo.name.compareTo(other.fieldInfo.name);
+    }   
+
 }

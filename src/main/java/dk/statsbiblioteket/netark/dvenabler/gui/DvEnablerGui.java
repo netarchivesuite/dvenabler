@@ -8,6 +8,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.swing.Box;
@@ -29,195 +30,196 @@ import dk.statsbiblioteket.netark.dvenabler.IndexUtils;
 
 public class DvEnablerGui extends JFrame  {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private ArrayList<JCheckBox> fieldsCheckBoxList;  //For checkbox to pick doc values fields. 	
+    private ArrayList<JCheckBox> fieldsCheckBoxList;  //For checkbox to pick doc values fields. 	
 
-	private static DvEnablerGui main; 
+    private static DvEnablerGui main; 
 
-	//Menu
-	JMenuBar  menuBar;
-	JMenu     jMenu_about;
-	JMenuItem menuItem_info;
+    //Menu
+    JMenuBar  menuBar;
+    JMenu     jMenu_about;
+    JMenuItem menuItem_info;
 
-	//Gui
-	JButton fileButton = new JButton("Index");
-	JButton buildButton = new JButton("Rebuild index");
-	JLabel indexFileLabel = new JLabel("Index file:", JLabel.LEFT);
-	JFileChooser chooser;
-	JScrollPane checkBoxScrollPane;
+    //Gui
+    JButton fileButton = new JButton("Index");
+    JButton buildButton = new JButton("Rebuild index");
+    JLabel indexFileLabel = new JLabel("Index file:", JLabel.LEFT);
+    JFileChooser chooser;
+    JScrollPane checkBoxScrollPane;
 
-	public static void main(String args[]) throws Exception {
-		main = new DvEnablerGui();
-		main.init();
-		main.pack();
-		main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		main.setVisible(true);
-		main.setResizable(true);
-	}
-
-
-	public  void init() throws Exception{
-		createMenu();
-		createGui();
-	}
-
-	public void createGui() throws Exception {
-
-		int row = 0;
-		getContentPane().setLayout(new GridBagLayout());
-		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.anchor = GridBagConstraints.NORTHWEST; 
-		gbc.fill = GridBagConstraints.NONE;
-		gbc.insets = new Insets(5, 5, 5, 5);
-
-		gbc.gridx = 0;
-		gbc.gridy = row; // row not finished
-		gbc.gridheight = 1;
-		gbc.gridwidth = 1;                          
-		fileButton=  new JButton("Index");;
-		fileButton.addActionListener(new IndexFolderActionListener());
-		getContentPane().add(fileButton, gbc);
-
-		gbc.gridx = 1;
-		gbc.gridy = row++;
-		gbc.gridheight = 1;
-		gbc.gridwidth = 1;                          
-		buildButton.setEnabled(false);
-		buildButton.addActionListener(new IndexBuilderActionListener());
-		getContentPane().add(buildButton, gbc);        
-
-		gbc.gridx = 0;
-		gbc.gridy = row++;
-		gbc.gridheight = 1;
-		gbc.gridwidth = 2;                          
-		getContentPane().add(indexFileLabel, gbc);
-
-		gbc.gridx = 0;
-		gbc.gridy = row++;
-		gbc.gridheight = 1;
-		gbc.gridwidth = 2;                          
-
-		Box box = Box.createVerticalBox(); //Empty before index is selected
-		checkBoxScrollPane = new JScrollPane(box);
-		checkBoxScrollPane.setPreferredSize(new Dimension(600, 300));
-		getContentPane().add(checkBoxScrollPane, gbc);
-	}
+    public static void main(String args[]) throws Exception {
+        main = new DvEnablerGui();
+        main.init();
+        main.pack();
+        main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        main.setVisible(true);
+        main.setResizable(true);
+    }
 
 
-	public void createMenu(){
-		menuBar = new JMenuBar();
-		menuBar.setBorder(new BevelBorder(BevelBorder.RAISED));
-		jMenu_about = new JMenu("About");
-		menuItem_info = new JMenuItem("Info");
-		jMenu_about.add(menuItem_info);
-		menuItem_info.addActionListener(new HelpEvent());
-		menuBar.add(jMenu_about);
-		setJMenuBar(menuBar);
-		setTitle("DocValue index build tool");
-	}
+    public  void init() throws Exception{
+        createMenu();
+        createGui();
+    }
 
-	class HelpEvent implements ActionListener{
+    public void createGui() throws Exception {
 
-		public void actionPerformed(ActionEvent e){
-			JOptionPane.showMessageDialog(main, "Another IT-WEB product.");
-		}
-	}
+        int row = 0;
+        getContentPane().setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.NORTHWEST; 
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(5, 5, 5, 5);
 
+        gbc.gridx = 0;
+        gbc.gridy = row; // row not finished
+        gbc.gridheight = 1;
+        gbc.gridwidth = 1;                          
+        fileButton=  new JButton("Index");;
+        fileButton.addActionListener(new IndexFolderActionListener());
+        getContentPane().add(fileButton, gbc);
 
-	public void showError(Throwable e) {
-		e.printStackTrace();
-		JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.WARNING_MESSAGE);
-	}
+        gbc.gridx = 1;
+        gbc.gridy = row++;
+        gbc.gridheight = 1;
+        gbc.gridwidth = 1;                          
+        buildButton.setEnabled(false);
+        buildButton.addActionListener(new IndexBuilderActionListener());
+        getContentPane().add(buildButton, gbc);        
 
+        gbc.gridx = 0;
+        gbc.gridy = row++;
+        gbc.gridheight = 1;
+        gbc.gridwidth = 2;                          
+        getContentPane().add(indexFileLabel, gbc);
 
-	class IndexFolderActionListener implements ActionListener{
+        gbc.gridx = 0;
+        gbc.gridy = row++;
+        gbc.gridheight = 1;
+        gbc.gridwidth = 2;                          
 
-		public void actionPerformed(ActionEvent e) {
-
-			chooser = new JFileChooser(); 
-			chooser.setCurrentDirectory(new java.io.File("."));
-			chooser.setDialogTitle("Select index data folder.");
-			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			//
-			// disable the "All files" option.
-			//
-			chooser.setAcceptAllFileFilterUsed(false);
-
-			int returnVal = chooser.showOpenDialog(null); 
-
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				File file = chooser.getSelectedFile();
-				String filePath= file.getAbsolutePath();
-				indexFileLabel.setText("Index file:"+filePath);
-				buildButton.setEnabled(true);
-				System.out.println("selected file:"+filePath);
-
-				createJCheckBoxes(filePath);
-			}
-		}
-
-		private void createJCheckBoxes(String indexFolder){
-
-			try{
-
-				fieldsCheckBoxList  = new ArrayList<JCheckBox>();
-	    		  List<DVConfig> fieldInfoList = IndexUtils.getDVConfigs(new File(indexFolder));
-				  
-				Box box = Box.createVerticalBox();
-				for (DVConfig current: fieldInfoList){				
-					LuceneFieldGuiPanel luceneFieldGui = new LuceneFieldGuiPanel(current); 			  
-				
-					box.add(luceneFieldGui);
-				}
-			  
-				checkBoxScrollPane.add(box);      
-				checkBoxScrollPane.setViewportView(box);    
-				checkBoxScrollPane.repaint();
-
-			}
-			catch(Throwable ex){
-				showError(ex);
-			}
-
-		}		
-	}
+        Box box = Box.createVerticalBox(); //Empty before index is selected
+        checkBoxScrollPane = new JScrollPane(box);
+        checkBoxScrollPane.setPreferredSize(new Dimension(600, 300));
+        getContentPane().add(checkBoxScrollPane, gbc);
+    }
 
 
-	class IndexBuilderActionListener implements ActionListener{
-		public void actionPerformed(ActionEvent e) {        
+    public void createMenu(){
+        menuBar = new JMenuBar();
+        menuBar.setBorder(new BevelBorder(BevelBorder.RAISED));
+        jMenu_about = new JMenu("About");
+        menuItem_info = new JMenuItem("Info");
+        jMenu_about.add(menuItem_info);
+        menuItem_info.addActionListener(new HelpEvent());
+        menuBar.add(jMenu_about);
+        setJMenuBar(menuBar);
+        setTitle("DocValue index build tool");
+    }
 
-			try{
+    class HelpEvent implements ActionListener{
 
-				chooser.setCurrentDirectory(new java.io.File("."));
-				chooser.setDialogTitle("Select index rebuild data folder.");
-				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-				//
-				// disable the "All files" option.
-				//
-				chooser.setAcceptAllFileFilterUsed(false);
+        public void actionPerformed(ActionEvent e){
+            JOptionPane.showMessageDialog(main, "Another IT-WEB product.");
+        }
+    }
 
-				int returnVal = chooser.showOpenDialog(null); 
 
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					File file = chooser.getSelectedFile();
-					String rebuildIndexfilePath= file.getAbsolutePath();
-					
-					//Need an index method to call
-					for ( JCheckBox current : fieldsCheckBoxList){ //Find which fields has been marked for DocVal
-						if (current.isSelected()){
-							System.out.println(current.getText() +  " is marked for DocVal");
-						}
-					}
-					
-				}
+    public void showError(Throwable e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.WARNING_MESSAGE);
+    }
 
-			}
-			catch(Exception ex){
-				showError(ex);
-			}
-		}
 
-	}
+    class IndexFolderActionListener implements ActionListener{
+
+        public void actionPerformed(ActionEvent e) {
+
+            chooser = new JFileChooser(); 
+            chooser.setCurrentDirectory(new java.io.File("."));
+            chooser.setDialogTitle("Select index data folder.");
+            chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            //
+            // disable the "All files" option.
+            //
+            chooser.setAcceptAllFileFilterUsed(false);
+
+            int returnVal = chooser.showOpenDialog(null); 
+
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                File file = chooser.getSelectedFile();
+                String filePath= file.getAbsolutePath();
+                indexFileLabel.setText("Index file:"+filePath);
+                buildButton.setEnabled(true);
+                System.out.println("selected file:"+filePath);
+
+                createJCheckBoxes(filePath);
+            }
+        }
+
+        private void createJCheckBoxes(String indexFolder){
+
+            try{
+
+                fieldsCheckBoxList  = new ArrayList<JCheckBox>();
+                List<DVConfig> fieldInfoList = IndexUtils.getDVConfigs(new File(indexFolder));
+                Collections.sort(fieldInfoList);
+
+                Box box = Box.createVerticalBox();
+                for (DVConfig current: fieldInfoList){				
+                    LuceneFieldGuiPanel luceneFieldGui = new LuceneFieldGuiPanel(current); 			  
+
+                    box.add(luceneFieldGui);
+                }
+
+                checkBoxScrollPane.add(box);      
+                checkBoxScrollPane.setViewportView(box);    
+                checkBoxScrollPane.repaint();
+
+            }
+            catch(Throwable ex){
+                showError(ex);
+            }
+
+        }		
+    }
+
+
+    class IndexBuilderActionListener implements ActionListener{
+        public void actionPerformed(ActionEvent e) {        
+
+            try{
+
+                chooser.setCurrentDirectory(new java.io.File("."));
+                chooser.setDialogTitle("Select index rebuild data folder.");
+                chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                //
+                // disable the "All files" option.
+                //
+                chooser.setAcceptAllFileFilterUsed(false);
+
+                int returnVal = chooser.showOpenDialog(null); 
+
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    File file = chooser.getSelectedFile();
+                    String rebuildIndexfilePath= file.getAbsolutePath();
+
+                    //Need an index method to call
+                    for ( JCheckBox current : fieldsCheckBoxList){ //Find which fields has been marked for DocVal
+                        if (current.isSelected()){
+                            System.out.println(current.getText() +  " is marked for DocVal");
+                        }
+                    }
+
+                }
+
+            }
+            catch(Exception ex){
+                showError(ex);
+            }
+        }
+
+    }
 
 }
