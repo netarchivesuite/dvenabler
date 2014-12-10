@@ -32,7 +32,7 @@ public class DvEnablerGui extends JFrame  {
 
     private static final long serialVersionUID = 1L;
 
-    private ArrayList<JCheckBox> fieldsCheckBoxList;  //For checkbox to pick doc values fields. 	
+    private ArrayList<LuceneFieldGuiPanel> luceneFieldGuiPanelList;  //For checkbox to pick doc values fields. 	
 
     private static DvEnablerGui main; 
 
@@ -162,15 +162,15 @@ public class DvEnablerGui extends JFrame  {
 
             try{
 
-                fieldsCheckBoxList  = new ArrayList<JCheckBox>();
+                luceneFieldGuiPanelList  = new ArrayList<LuceneFieldGuiPanel>();
                 List<DVConfig> fieldInfoList = IndexUtils.getDVConfigs(new File(indexFolder));
                 Collections.sort(fieldInfoList);
 
                 Box box = Box.createVerticalBox();
                 for (DVConfig current: fieldInfoList){				
                     LuceneFieldGuiPanel luceneFieldGui = new LuceneFieldGuiPanel(current); 			  
-
                     box.add(luceneFieldGui);
+                    luceneFieldGuiPanelList.add(luceneFieldGui);
                 }
 
                 checkBoxScrollPane.add(box);      
@@ -191,6 +191,15 @@ public class DvEnablerGui extends JFrame  {
 
             try{
 
+                String confirmText=generateBuildConfirmText();
+
+                int response = JOptionPane.showConfirmDialog(null, confirmText, "Confirm index build",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+                if (response == JOptionPane.NO_OPTION ){
+                    return;
+                }                
+
                 chooser.setCurrentDirectory(new java.io.File("."));
                 chooser.setDialogTitle("Select index rebuild data folder.");
                 chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -205,13 +214,6 @@ public class DvEnablerGui extends JFrame  {
                     File file = chooser.getSelectedFile();
                     String rebuildIndexfilePath= file.getAbsolutePath();
 
-                    //Need an index method to call
-                    for ( JCheckBox current : fieldsCheckBoxList){ //Find which fields has been marked for DocVal
-                        if (current.isSelected()){
-                            System.out.println(current.getText() +  " is marked for DocVal");
-                        }
-                    }
-
                 }
 
             }
@@ -222,4 +224,15 @@ public class DvEnablerGui extends JFrame  {
 
     }
 
+    private String generateBuildConfirmText(){
+        StringBuilder b= new StringBuilder();        
+        b.append("You have selected to rebuild the index with the following docvalue fields:\n");
+        for (LuceneFieldGuiPanel field : luceneFieldGuiPanelList){
+            Object docValType = field.getDocValueTypesList().getSelectedItem();
+            if (docValType != LuceneFieldGuiPanel.DocValuesTypeGUI.NO_DOCVAL){
+                b.append(field.getLuceneField().getName() +" (" +field.getDocValueTypesList().getSelectedItem() +")\n");
+            }
+        }        
+        return b.toString();        
+    }
 }
