@@ -72,29 +72,4 @@ public class IndexUtils {
         }
     }
 
-  
-    public static  ArrayList<SchemaField> getAllFieldsInfoFromIndex(String indexLocation) throws Exception{
-
-        Directory directory = MMapDirectory.open(new File(indexLocation));
-        IndexReader reader = DirectoryReader.open(directory);
-
-        ArrayList<SchemaField>  fieldInfoList= new  ArrayList<SchemaField> ();
-        List<AtomicReaderContext> leaves = reader.leaves();
-        for (AtomicReaderContext context : leaves) {
-            AtomicReader atomicReader = context.reader();
-            FieldInfos fieldInfos = atomicReader.getFieldInfos();
-            for (FieldInfo fieldInfo : fieldInfos) {
-                SchemaField f = new SchemaField();
-                f.setName(fieldInfo.name);
-                f.setStored(false); // kan ikke få info
-                f.setType("(mangler type)");
-
-                fieldInfoList.add(f);
-            }
-        }
-        return fieldInfoList;
-    }
-
-
-
 }
