@@ -26,6 +26,7 @@ import javax.swing.border.BevelBorder;
 
 import dk.statsbiblioteket.netark.dvenabler.DVConfig;
 import dk.statsbiblioteket.netark.dvenabler.IndexUtils;
+import dk.statsbiblioteket.netark.dvenabler.gui.LuceneFieldGuiPanel.DocValuesTypeGUI;
 
 
 public class DvEnablerGui extends JFrame  {
@@ -35,7 +36,7 @@ public class DvEnablerGui extends JFrame  {
     private ArrayList<LuceneFieldGuiPanel> luceneFieldGuiPanelList;  //For checkbox to pick doc values fields. 	
 
     private static DvEnablerGui main; 
-
+    private String selectedIndexFolder; 
     //Menu
     JMenuBar  menuBar;
     JMenu     jMenu_about;
@@ -150,6 +151,7 @@ public class DvEnablerGui extends JFrame  {
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 File file = chooser.getSelectedFile();
                 String filePath= file.getAbsolutePath();
+                selectedIndexFolder = filePath;
                 indexFileLabel.setText("Index file:"+filePath);
                 buildButton.setEnabled(true);
                 System.out.println("selected file:"+filePath);
@@ -211,9 +213,13 @@ public class DvEnablerGui extends JFrame  {
                 int returnVal = chooser.showOpenDialog(null); 
 
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
-                    File file = chooser.getSelectedFile();
-                    String rebuildIndexfilePath= file.getAbsolutePath();
-
+                    File rebuildFolder = chooser.getSelectedFile();                                      
+                                                                                
+                    ArrayList<DVConfig> config = rebuildConfig();
+                    
+                    IndexUtils.convert(new File(selectedIndexFolder), rebuildFolder, config);
+                    
+                    JOptionPane.showMessageDialog(null,"Index rebuild completed");
                 }
 
             }
@@ -221,16 +227,26 @@ public class DvEnablerGui extends JFrame  {
                 showError(ex);
             }
         }
-
+    }
+        
+    private ArrayList<DVConfig> rebuildConfig(){
+        ArrayList<DVConfig> config  = new ArrayList<DVConfig>();
+        for (LuceneFieldGuiPanel current  : luceneFieldGuiPanelList ){             
+             current.rebuildLuceneFieldData();
+             DVConfig field = current.getLuceneField();
+             config.add(field);            
+        }
+                
+        return config;        
     }
 
     private String generateBuildConfirmText(){
         StringBuilder b= new StringBuilder();        
         b.append("You have selected to rebuild the index with the following docvalue fields:\n");
         for (LuceneFieldGuiPanel field : luceneFieldGuiPanelList){
-            Object docValType = field.getDocValueTypesList().getSelectedItem();
-            if (docValType != LuceneFieldGuiPanel.DocValuesTypeGUI.NO_DOCVAL){
-                b.append(field.getLuceneField().getName() +" (" +field.getDocValueTypesList().getSelectedItem() +")\n");
+            DocValuesTypeGUI selectedDocValueType = field.getSelectedDocValueType();
+            if (selectedDocValueType != LuceneFieldGuiPanel.DocValuesTypeGUI.NO_DOCVAL){
+                b.append(field.getLuceneField().getName() +" (" +selectedDocValueType +")\n");
             }
         }        
         return b.toString();        
