@@ -14,6 +14,7 @@
  */
 package dk.statsbiblioteket.netark.dvenabler;
 
+import dk.statsbiblioteket.netark.dvenabler.wrapper.DVDirectoryReader;
 import junit.framework.TestCase;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;

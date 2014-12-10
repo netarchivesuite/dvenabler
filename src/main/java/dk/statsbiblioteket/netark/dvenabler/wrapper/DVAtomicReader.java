@@ -12,8 +12,9 @@
  *  limitations under the License.
  *
  */
-package dk.statsbiblioteket.netark.dvenabler;
+package dk.statsbiblioteket.netark.dvenabler.wrapper;
 
+import dk.statsbiblioteket.netark.dvenabler.DVConfig;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
 import org.apache.lucene.document.FieldType;
