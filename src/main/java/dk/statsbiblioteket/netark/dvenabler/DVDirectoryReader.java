@@ -26,37 +26,36 @@ import java.util.*;
  */
 public class DVDirectoryReader extends FilterDirectoryReader {
     private static Log log = LogFactory.getLog(DVDirectoryReader.class);
-    private final Set<FieldInfo> dvFields;
+    private final Set<DVConfig> dvConfigs;
 
     /**
      * Creates an adjusting reader; removing or/and adding DocValues for the specified fields.
      * @param innerReader the reader to wrap.
-     * @param dvFields a list of fields to adjust.
-     *                 Fields in the innerReader not specified in dvFields are passed unmodified.
+     * @param dvConfigs the fields to adjust DocValues for.
      */
-    public DVDirectoryReader(DirectoryReader innerReader, Set<FieldInfo> dvFields) {
-        super(innerReader, new TransformingAtomicReaderWrapper(dvFields));
-        this.dvFields = dvFields;
-        log.info("Constructed DVDirectoryReader with " + dvFields + " DocValue field adjustments");
+    public DVDirectoryReader(DirectoryReader innerReader, Set<DVConfig> dvConfigs) {
+        super(innerReader, new TransformingAtomicReaderWrapper(dvConfigs));
+        this.dvConfigs = dvConfigs;
+        log.info("Constructed DVDirectoryReader with " + dvConfigs + " DocValue field adjustments");
     }
 
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
-        log.info("Wrapping DirectoryReader with " + dvFields + " field adjustments");
-        return new DVDirectoryReader(in, dvFields);
+        log.info("Wrapping DirectoryReader with " + dvConfigs + " field adjustments");
+        return new DVDirectoryReader(in, dvConfigs);
     }
 
     public static class TransformingAtomicReaderWrapper extends SubReaderWrapper {
-        private final Set<FieldInfo> dvFields;
+        private final Set<DVConfig> dvConfigs;
 
-        public TransformingAtomicReaderWrapper(Set<FieldInfo> dvFields) {
-            this.dvFields = dvFields;
+        public TransformingAtomicReaderWrapper(Set<DVConfig> dvConfigs) {
+            this.dvConfigs = dvConfigs;
         }
 
         @Override
         public AtomicReader wrap(AtomicReader reader) {
             log.debug("Wrapping Atomic");
-            return new DVAtomicReader(reader, dvFields);
+            return new DVAtomicReader(reader, dvConfigs);
         }
     }
 }

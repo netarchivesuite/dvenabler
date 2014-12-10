@@ -31,7 +31,7 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
     private static Log log = LogFactory.getLog(SortedSetDocValuesWrapper.class);
 
     private final AtomicReader reader;
-    private final String field;
+    private final DVConfig field;
     private final Set<String> FIELDS; // Contains {@link #field} and nothing else
     // TODO: Store this in a BytesRefArray instead. This requires custom binary search
     private final List<String> values;
@@ -41,10 +41,10 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
     private long[] ordinals = new long[10];
     private int ordinalsCount = -1;
 
-    public SortedSetDocValuesWrapper(AtomicReader reader, String field) throws IOException {
+    public SortedSetDocValuesWrapper(AtomicReader reader, DVConfig field) throws IOException {
         this.reader = reader;
         this.field = field;
-        FIELDS = new HashSet<String>(Arrays.asList(field));
+        FIELDS = new HashSet<String>(Arrays.asList(field.getName()));
         log.info("Creating map for SortedSetDocValues for field '" + field + "'");
         long startTime = System.nanoTime();
         values = fill();
@@ -57,7 +57,7 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
         final SortedSet<String> values = new TreeSet<String>();
         for (int docID = 0 ; docID < reader.maxDoc() ; docID++) {
             for (IndexableField field: reader.document(docID, FIELDS)) {
-                if (this.field.equals(field.name())) {
+                if (this.field.getName().equals(field.name())) {
                     String value = field.stringValue();
                     if (value != null) {
                         values.add(value);
@@ -80,7 +80,7 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
         ordinalsCount = 0;
         try {
             Document doc = reader.document(docID, FIELDS);
-            String[] vals = doc.getValues(field);
+            String[] vals = doc.getValues(field.getName());
             if (vals == null) {
                 return;
             }

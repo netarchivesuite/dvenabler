@@ -31,7 +31,7 @@ import java.util.*;
 public class DVAtomicReader extends FilterAtomicReader {
     private static Log log = LogFactory.getLog(DVAtomicReader.class);
 
-    private final Map<String, FieldInfo> dvFields;
+    private final Map<String, DVConfig> dvConfigs;
     private final HashMap<String, Bits> dvContent = new HashMap<String, Bits>();
 
     @Override
@@ -41,7 +41,8 @@ public class DVAtomicReader extends FilterAtomicReader {
         FieldInfo[] modified = new FieldInfo[original.size()];
         int index = 0;
         for (FieldInfo oInfo: original) {
-            modified[index++] = dvFields.containsKey(oInfo.name) ? dvFields.get(oInfo.name) : oInfo;
+            modified[index++] = dvConfigs.containsKey(oInfo.name) ?
+                    dvConfigs.get(oInfo.name).getFieldInfo() : oInfo;
         }
                 /*FieldInfo mInfo = new FieldInfo(
                         oInfo.name, oInfo.isIndexed(), oInfo.number, oInfo.hasVectors(),
@@ -71,30 +72,30 @@ public class DVAtomicReader extends FilterAtomicReader {
     /**
      * Creates an adjusting reader; removing or/and adding DocValues for the specified fields.
      * @param innerReader the reader to wrap.
-     * @param dvFields a list of fields to adjust.
-     *                 Fields in the innerReader not specified in dvFields are passed unmodified.
+     * @param dvConfigs a list of fields to adjust.
+     *                 Fields in the innerReader not specified in dvConfigs are passed unmodified.
      */
-    public DVAtomicReader(AtomicReader innerReader, Set<FieldInfo> dvFields) {
+    public DVAtomicReader(AtomicReader innerReader, Set<DVConfig> dvConfigs) {
         super(innerReader);
-        this.dvFields = new HashMap<String, FieldInfo>(dvFields.size());
-        for (FieldInfo fieldInfo: dvFields) {
-            this.dvFields.put(fieldInfo.name, fieldInfo);
+        this.dvConfigs = new HashMap<String, DVConfig>(dvConfigs.size());
+        for (DVConfig dvConfig: dvConfigs) {
+            this.dvConfigs.put(dvConfig.getName(), dvConfig);
         }
-        log.info("Wrapped AtomicReader with " + dvFields.size() + " field adjustments");
+        log.info("Wrapped AtomicReader with " + dvConfigs.size() + " field adjustments");
     }
 
     // Should have been named docsWithDocValueEntriesForField
     // Creates a bitmap of the documents that has stored values and should have DocValues
     @Override
     public synchronized Bits getDocsWithField(final String field) throws IOException {
-        if (!dvFields.containsKey(field)) {
+        if (!dvConfigs.containsKey(field)) {
             return super.getDocsWithField(field);
         }
 
         if (!dvContent.containsKey(field)) {
             log.info("Resolving docsWithField(" + field + ")");
-            FieldInfo fi = dvFields.get(field);
-            if (!fi.hasDocValues()) {
+            DVConfig dvConfig = dvConfigs.get(field);
+            if (!dvConfig.hasDocValues()) {
                 dvContent.put(field, null);
             } else {
                 OpenBitSet hasContent = new OpenBitSet(maxDoc());
@@ -113,9 +114,9 @@ public class DVAtomicReader extends FilterAtomicReader {
     @Override
     public NumericDocValues getNumericDocValues(String field) throws IOException {
         log.debug("getNumericDocValues(" + field + ") called");
-        if (!dvFields.containsKey(field)) {
+        if (!dvConfigs.containsKey(field)) {
             return super.getNumericDocValues(field);
-        } else if (!dvFields.get(field).hasDocValues()) {
+        } else if (!dvConfigs.get(field).hasDocValues()) {
             return null;
         }
         NumericDocValues dv = super.getNumericDocValues(field);
@@ -125,15 +126,15 @@ public class DVAtomicReader extends FilterAtomicReader {
         }
         log.info("getNumericDocValues called for field '" + field + "' with no DV. Constructing from stored");
         // TODO: Infer whether this is long, int, double or float
-        return new NumericDocValuesWrapper(this, dvFields.get(field), FieldType.NumericType.LONG);
+        return new NumericDocValuesWrapper(this, dvConfigs.get(field));
     }
 
     @Override
     public BinaryDocValues getBinaryDocValues(String field) throws IOException {
         log.debug("getBinaryDocValues(" + field + ") called");
-        if (!dvFields.containsKey(field)) {
+        if (!dvConfigs.containsKey(field)) {
             return super.getBinaryDocValues(field);
-        } else if (!dvFields.get(field).hasDocValues()) {
+        } else if (!dvConfigs.get(field).hasDocValues()) {
             return null;
         }
         // TODO: Implement this
@@ -150,9 +151,9 @@ public class DVAtomicReader extends FilterAtomicReader {
     @Override
     public SortedDocValues getSortedDocValues(String field) throws IOException {
         log.debug("getSortedDocValues(" + field + ") called");
-        if (!dvFields.containsKey(field)) {
+        if (!dvConfigs.containsKey(field)) {
             return super.getSortedDocValues(field);
-        } else if (!dvFields.get(field).hasDocValues()) {
+        } else if (!dvConfigs.get(field).hasDocValues()) {
             return null;
         }
         SortedDocValues dv = super.getSortedDocValues(field);
@@ -161,15 +162,15 @@ public class DVAtomicReader extends FilterAtomicReader {
             return dv;
         }
         log.info("getSortedDocValues called for field '" + field + "' with no DV. Constructing from stored");
-        return new SortedDocValuesWrapper(this, field);
+        return new SortedDocValuesWrapper(this, dvConfigs.get(field));
     }
 
     @Override
     public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
         log.debug("getSortedSetDocValues(" + field + ") called");
-        if (!dvFields.containsKey(field)) {
+        if (!dvConfigs.containsKey(field)) {
             return super.getSortedSetDocValues(field);
-        } else if (!dvFields.get(field).hasDocValues()) {
+        } else if (!dvConfigs.get(field).hasDocValues()) {
             return null;
         }
         SortedSetDocValues dv = super.getSortedSetDocValues(field);
@@ -178,7 +179,7 @@ public class DVAtomicReader extends FilterAtomicReader {
             return dv;
         }
         log.info("getSortedSetDocValues called for field '" + field + "' with no DV. Constructing from stored");
-        return new SortedSetDocValuesWrapper(this, field);
+        return new SortedSetDocValuesWrapper(this, dvConfigs.get(field));
     }
 
     @Override

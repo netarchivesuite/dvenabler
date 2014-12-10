@@ -74,7 +74,7 @@ public class DVReaderTest extends TestCase {
         try {
             Directory directory = MMapDirectory.open(INDEX);
             IndexReader reader = new DVDirectoryReader(
-                    DirectoryReader.open(directory), createDVFieldInfos(INDEX));
+                    DirectoryReader.open(directory), createDVFieldDescriptions(INDEX));
             IndexSearcher searcher = new IndexSearcher(reader);
 
             assertIndexValues(reader, searcher, true);
@@ -89,7 +89,7 @@ public class DVReaderTest extends TestCase {
         final File INDEX_SRC = generateIndex();
         final File INDEX_DEST = new File("target/testindex.deletefreely2");
         try {
-            IndexUtils.convert(INDEX_SRC, INDEX_DEST, createDVFieldInfos(INDEX_SRC));
+            IndexUtils.convert(INDEX_SRC, INDEX_DEST, createDVFieldDescriptions(INDEX_SRC));
             assertIndexValues(INDEX_SRC, false);
             assertIndexValues(INDEX_DEST, true);
         } finally {
@@ -98,23 +98,23 @@ public class DVReaderTest extends TestCase {
         }
     }
 
-    private Set<FieldInfo> createDVFieldInfos(File index) throws IOException {
-        List<FieldInfo> baseFieldInfos = IndexUtils.getFieldInfos(index);
-        List<FieldInfo> dvFieldInfos = new ArrayList<FieldInfo>();
-        for (FieldInfo baseField: baseFieldInfos) {
-            if (SINGLE.equals(baseField.name)) {
-                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.SORTED));
-            } else if (MULTI.equals(baseField.name)) {
-                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.SORTED_SET));
-            } else if (DOUBLE.equals(baseField.name)) {
-                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.NUMERIC));
-            } else if (FLOAT.equals(baseField.name)) {
-                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.NUMERIC));
-            } else if (LONG.equals(baseField.name)) {
-                dvFieldInfos.add(IndexUtils.adjustDocValue(baseField, true, FieldInfo.DocValuesType.NUMERIC));
+    private Set<DVConfig> createDVFieldDescriptions(File index) throws IOException {
+        List<DVConfig> baseConfigs = IndexUtils.getDVConfigs(index);
+        List<DVConfig> dvConfigs = new ArrayList<DVConfig>();
+        for (DVConfig baseConfig: baseConfigs) {
+            if (SINGLE.equals(baseConfig.getName())) {
+                dvConfigs.add(baseConfig.set(FieldInfo.DocValuesType.SORTED));
+            } else if (MULTI.equals(baseConfig.getName())) {
+                dvConfigs.add(baseConfig.set(FieldInfo.DocValuesType.SORTED_SET));
+            } else if (DOUBLE.equals(baseConfig.getName())) {
+                dvConfigs.add(baseConfig.set(FieldInfo.DocValuesType.NUMERIC, FieldType.NumericType.DOUBLE));
+            } else if (FLOAT.equals(baseConfig.getName())) {
+                dvConfigs.add(baseConfig.set(FieldInfo.DocValuesType.NUMERIC, FieldType.NumericType.FLOAT));
+            } else if (LONG.equals(baseConfig.getName())) {
+                dvConfigs.add(baseConfig.set(FieldInfo.DocValuesType.NUMERIC, FieldType.NumericType.LONG));
             }
         }
-        return new HashSet<FieldInfo>(dvFieldInfos);
+        return new HashSet<DVConfig>(dvConfigs);
     }
 
     private void assertIndexValues(File index, boolean dvExpected) throws IOException, ParseException {

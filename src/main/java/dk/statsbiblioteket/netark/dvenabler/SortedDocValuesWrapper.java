@@ -30,15 +30,15 @@ public class SortedDocValuesWrapper extends SortedDocValues {
     private static Log log = LogFactory.getLog(SortedDocValuesWrapper.class);
 
     private final AtomicReader reader;
-    private final String field;
+    private final DVConfig field;
     private final Set<String> FIELDS; // Contains {@link #field} and nothing else
     // TODO: Store this in a BytesRefArray instead. This requires custom binary search
     private final List<String> values;
 
-    public SortedDocValuesWrapper(AtomicReader reader, String field) throws IOException {
+    public SortedDocValuesWrapper(AtomicReader reader, DVConfig field) throws IOException {
         this.reader = reader;
         this.field = field;
-        FIELDS = new HashSet<String>(Arrays.asList(field));
+        FIELDS = new HashSet<String>(Arrays.asList(field.getName()));
         log.info("Creating map for SortedDocValues for field '" + field + "'");
         long startTime = System.nanoTime();
         values = fill();
@@ -49,7 +49,7 @@ public class SortedDocValuesWrapper extends SortedDocValues {
     private List<String> fill() throws IOException {
         final SortedSet<String> values = new TreeSet<String>();
         for (int docID = 0 ; docID < reader.maxDoc() ; docID++) {
-            String value = reader.document(docID, FIELDS).get(field);
+            String value = reader.document(docID, FIELDS).get(field.getName());
             if (value != null) {
                 values.add(value);
             }
@@ -60,7 +60,7 @@ public class SortedDocValuesWrapper extends SortedDocValues {
     @Override
     public int getOrd(int docID) {
         try {
-            String value = reader.document(docID, FIELDS).get(field);
+            String value = reader.document(docID, FIELDS).get(field.getName());
             if (value == null) {
                 return -1;
             }
