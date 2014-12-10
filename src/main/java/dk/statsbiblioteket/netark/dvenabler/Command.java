@@ -73,6 +73,7 @@ public class Command {
         options.addOption("v", "verbose", false, "Enable verbose output");
         options.addOption("l", "list", false, "Lists fields in index");
 
+
         Option iOption = new Option("i", "index", true, "Folder with Lucene index");
         iOption.setRequired(true);
         iOption.setArgs(1);
