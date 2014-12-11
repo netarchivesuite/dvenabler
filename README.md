@@ -41,6 +41,12 @@ for the GUI and
 
 for command line. Put arguments in `exec.args`.
 
+Build jar with dependencies:
+mvn install assembly:assembly
+And run the jar build under /target with: 
+java -jar dvenabler-1.0-SNAPSHOT-jar-with-dependencies.jar
+
+
 ## Contact
 
 Developed by Thomas Egense (teg@statsbiblioteket.dk) and Toke Eskildsen (te@statsbiblioteket.dk) 2014.
