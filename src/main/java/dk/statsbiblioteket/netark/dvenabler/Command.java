@@ -54,6 +54,12 @@ public class Command {
             return;
         }
 
+        if (!cli.hasOption(INPUT)) {
+            System.err.println("input index must be specified");
+            usage();
+            return;
+        }
+
         final File in = new File(cli.getOptionValue(INPUT));
         if (!in.exists() || !in.isDirectory()) {
             System.err.println("Unable to access index folder '" + in + "'");
@@ -195,7 +201,6 @@ public class Command {
         }
         {
             Option iOption = new Option("i", INPUT, true, "Input folder with Lucene index");
-            iOption.setRequired(true);
             iOption.setArgs(1);
             options.addOption(iOption);
         }

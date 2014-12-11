@@ -51,10 +51,9 @@ public class NumericDocValuesWrapper extends NumericDocValues {
             }
             Number number = iField.numericValue();
             if (number == null) {
-                log.warn("No numeric value '" + iField.stringValue() + "' for field '" + dvConfig.getName()
-                         + "' in doc " + docID + ". This looks like a non-numeric field! Returning -1");
-                // This should have been handled by {@link DVAtomicReader#getDocsWithField}
-                return -1;
+                throw new RuntimeException(
+                        "No numeric value '" + iField.stringValue() + "' for field '" + dvConfig.getName()
+                         + "' in doc " + docID + ". This looks like a non-numeric field!");
             }
             // TODO: Determine correct method to call from field info
             switch (dvConfig.getNumericType()) {
