@@ -34,12 +34,12 @@ public class SortedDocValuesWrapper extends SortedDocValues {
     private final DVConfig field;
     private final Set<String> FIELDS; // Contains {@link #field} and nothing else
     // TODO: Store this in a BytesRefArray instead. This requires custom binary search
-    private final List<String> values;
+    private final List<BytesRef> values;
 
     public SortedDocValuesWrapper(AtomicReader reader, DVConfig field) throws IOException {
         this.reader = reader;
         this.field = field;
-        FIELDS = new HashSet<String>(Arrays.asList(field.getName()));
+        FIELDS = new HashSet<>(Arrays.asList(field.getName()));
         log.info("Creating map for SortedDocValues for field '" + field + "'");
         long startTime = System.nanoTime();
         values = fill();
@@ -47,15 +47,16 @@ public class SortedDocValuesWrapper extends SortedDocValues {
                  + "' in " + ((System.nanoTime()-startTime)/1000000/1000) + "ms");
     }
 
-    private List<String> fill() throws IOException {
-        final SortedSet<String> values = new TreeSet<String>();
+    private List<BytesRef> fill() throws IOException {
+        final SortedSet<BytesRef> values = new TreeSet<>();
         for (int docID = 0 ; docID < reader.maxDoc() ; docID++) {
             String value = reader.document(docID, FIELDS).get(field.getName());
+            System.out.println(value);
             if (value != null) {
-                values.add(value);
+                values.add(new BytesRef(value));
             }
         }
-        return new ArrayList<String>(values);
+        return new ArrayList<>(values);
     }
 
     @Override
@@ -65,7 +66,7 @@ public class SortedDocValuesWrapper extends SortedDocValues {
             if (value == null) {
                 return -1;
             }
-            int ord = Collections.binarySearch(values, value);
+            int ord = Collections.binarySearch(values, new BytesRef(value));
             if (ord < 0) {
                 throw new IllegalStateException(
                         "The ord for value '" + value + "' for docID " + docID + " in field '" + field
@@ -79,7 +80,7 @@ public class SortedDocValuesWrapper extends SortedDocValues {
 
     @Override
     public void lookupOrd(int ord, BytesRef result) {
-        result.copyChars(values.get(ord));
+        result.copyBytes(values.get(ord));
     }
 
     @Override
