@@ -68,7 +68,11 @@ public class IndexUtils {
                         continue;
                     }
                     String first = getFirst(context.reader(), fieldInfo.name);
-                    dvConfigs.put(fieldInfo.name, new DVConfig(fieldInfo, FieldType.NumericType.LONG, first));
+                    dvConfigs.put(fieldInfo.name, new DVConfig(
+                            fieldInfo,
+                            fieldInfo.hasDocValues() && fieldInfo.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC
+                                    ? FieldType.NumericType.LONG : null,
+                            first));
                 }
             }
             List<DVConfig> configs = new ArrayList<DVConfig>(dvConfigs.values());
