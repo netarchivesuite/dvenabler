@@ -111,8 +111,10 @@ public class Command {
             System.out.println(String.format("Adjusting from %s to %s with %d adjustment fields",
                                              in, out, dvFields.size()));
         }
+        long processTime = -System.nanoTime();
         IndexUtils.convert(in, out, dvFields);
-        System.out.println("Finished conversion successfully");
+        processTime += System.nanoTime();
+        System.out.println("Finished conversion successfully in " + (processTime/1000000/1000) + " seconds");
     }
 
     private static List<DVConfig> getFields(File index, String[] rawFields) throws IOException {
