@@ -63,7 +63,7 @@ public class DVAtomicReader extends FilterAtomicReader {
             if ((val = termsEnum.next()) == null) {
                 return null;
             }
-            System.out.println("Got value for field " + field + ": " + val);
+            //System.out.println("Got value for field " + field + ": " + val);
         } catch (IOException e) {
             log.warn("IOException while trying to infer NumericType for field " + field, e);
         }

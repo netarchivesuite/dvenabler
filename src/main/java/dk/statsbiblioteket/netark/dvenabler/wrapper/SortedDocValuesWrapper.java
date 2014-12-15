@@ -51,7 +51,7 @@ public class SortedDocValuesWrapper extends SortedDocValues {
         final SortedSet<BytesRef> values = new TreeSet<>();
         for (int docID = 0 ; docID < reader.maxDoc() ; docID++) {
             String value = reader.document(docID, FIELDS).get(field.getName());
-            System.out.println(value);
+            //System.out.println(value);
             if (value != null) {
                 values.add(new BytesRef(value));
             }
