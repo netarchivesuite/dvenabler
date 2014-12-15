@@ -10,18 +10,13 @@ Normally a full re-index of the Lucene/Solr index is required if one want to ena
 
  * JDK 1.7
  * Maven 3 (Maven 1 or 2 might also work)
- * A Lucene index
+ * A Lucene 4.8-readable index
 
 ## Status
 
 The current implementation is highly experimental!
 
-All DocValues-types are now supported, but lo larger-scale conversions has been tried.
-
-Only fields with stored values can currently be converted to DocValues.
-
-The conversion requires all unique values of DV-needing String fields to be stored in-memory in a TreeSet.
-This is fairly memory-intensive.
+All DocValues-types are now supported, and a [test on a 900GB index](https://sbdevel.wordpress.com/2014/12/15/changing-field-type-in-lucenesolr/) appears to be successful. Only fields with stored values can currently be converted to DocValues. The conversion requires all unique values of DV-needing String fields to be stored in-memory in a TreeSet, which is fairly memory-intensive.
 
 ## Build and usage
 
