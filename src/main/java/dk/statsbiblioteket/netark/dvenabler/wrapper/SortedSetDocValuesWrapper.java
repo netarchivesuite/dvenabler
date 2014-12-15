@@ -35,7 +35,7 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
     private final DVConfig field;
     private final Set<String> FIELDS; // Contains {@link #field} and nothing else
     // TODO: Store this in a BytesRefArray instead. This requires custom binary search
-    private final List<String> values;
+    private final List<BytesRef> values;
 
     private int docID = -1;
     private int ordinalIndex = -1;
@@ -45,7 +45,7 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
     public SortedSetDocValuesWrapper(AtomicReader reader, DVConfig field) throws IOException {
         this.reader = reader;
         this.field = field;
-        FIELDS = new HashSet<String>(Arrays.asList(field.getName()));
+        FIELDS = new HashSet<>(Arrays.asList(field.getName()));
         log.info("Creating map for SortedSetDocValues for field '" + field + "'");
         long startTime = System.nanoTime();
         values = fill();
@@ -53,20 +53,20 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
                  + "' in " + ((System.nanoTime()-startTime)/1000000/1000) + "ms");
     }
 
-    private List<String> fill() throws IOException {
+    private List<BytesRef> fill() throws IOException {
         // TODO: Is this sort the same as the default BytesRef-based sort for DocValues?
-        final SortedSet<String> values = new TreeSet<String>();
+        final SortedSet<BytesRef> values = new TreeSet<>();
         for (int docID = 0 ; docID < reader.maxDoc() ; docID++) {
             for (IndexableField field: reader.document(docID, FIELDS)) {
                 if (this.field.getName().equals(field.name())) {
                     String value = field.stringValue();
                     if (value != null) {
-                        values.add(value);
+                        values.add(new BytesRef(value));
                     }
                 }
             }
         }
-        return new ArrayList<String>(values);
+        return new ArrayList<>(values);
     }
 
     @Override
@@ -98,11 +98,11 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
 
     @Override
     public void lookupOrd(long ord, BytesRef result) {
-        result.copyChars(values.get((int) ord));
+        result.copyBytes(values.get((int) ord));
     }
 
     public long getOrd(String value) {
-        int ord = Collections.binarySearch(values, value);
+        int ord = Collections.binarySearch(values, new BytesRef(value));
         if (ord < 0) {
             throw new IllegalStateException(
                     "The ord for value '" + value + "' for docID " + docID + " in field '" + field

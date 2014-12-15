@@ -25,27 +25,17 @@ This is fairly memory-intensive.
 
 ## Build and usage
 
-Clone the repository and run
+Clone the repository and build a dependency including JAR with
 
-`mvn package`
+`mvn install assembly:assembly`
 
-to build the project.
+To start the GUI, run
 
-Run
+`java -Xmx512m -jar target/dvenabler-1.0-SNAPSHOT-jar-with-dependencies.jar`
 
-`MAVEN_OPTS=-Xmx256m mvn exec:java -Dexec.mainClass="dk.statsbiblioteket.netark.dvenabler.gui.DvEnablerGui"`
+To use the command line interface, call
 
-for the GUI and
-
-`MAVEN_OPTS=-Xmx256m mvn -q exec:java -Dexec.mainClass="dk.statsbiblioteket.netark.dvenabler.Command" -Dexec.args="-h"`
-
-for command line. Put arguments in `exec.args`.
-
-Build jar with dependencies:
-mvn install assembly:assembly
-And run the jar build under /target with: 
-java -jar dvenabler-1.0-SNAPSHOT-jar-with-dependencies.jar
-
+`java -Xmx512m -cp target/dvenabler-1.0-SNAPSHOT-jar-with-dependencies.jar dk.statsbiblioteket.netark.dvenabler.Command -h`
 
 ## Contact
 

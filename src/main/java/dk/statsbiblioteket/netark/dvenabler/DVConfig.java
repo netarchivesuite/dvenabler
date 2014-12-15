@@ -80,6 +80,9 @@ public class DVConfig implements Comparable<DVConfig>{
                 fieldInfo.name, fieldInfo.isIndexed(), fieldInfo.number, fieldInfo.hasVectors(),
                 fieldInfo.omitsNorms(), fieldInfo.hasPayloads(), fieldInfo.getIndexOptions(),
                 docValuesType, fieldInfo.getNormType(), fieldInfo.attributes());
+        if (FieldInfo.DocValuesType.NUMERIC != docValuesType) {
+            this.numericType = null;
+        }
         return this;
     }
     /**
@@ -93,7 +96,7 @@ public class DVConfig implements Comparable<DVConfig>{
             throw new IllegalArgumentException("The docValuesType is NUMERIC but numericType==null");
         }
         set(docValuesType);
-        setNumericType(numericType);
+        setNumericType(docValuesType == FieldInfo.DocValuesType.NUMERIC ? numericType : null);
         return this;
     }
 
