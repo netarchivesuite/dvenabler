@@ -30,6 +30,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
@@ -85,7 +86,7 @@ public class DVReaderTest extends TestCase {
     }
 
     public void testDVEnableIndex() throws IOException, ParseException {
-        log.info("testCreateAndReadPlainIndex started");
+        log.info("testDVEnableIndex started");
 
         final File INDEX_SRC = generateIndex();
         final File INDEX_DEST = new File("target/testindex.deletefreely2");
@@ -93,6 +94,80 @@ public class DVReaderTest extends TestCase {
             IndexUtils.convert(INDEX_SRC, INDEX_DEST, createDVFieldDescriptions(INDEX_SRC));
             assertIndexValues(INDEX_SRC, false);
             assertIndexValues(INDEX_DEST, true);
+        } finally {
+            delete(INDEX_SRC);
+            delete(INDEX_DEST);
+        }
+    }
+
+    public void testLargerDVEnableIndex() throws IOException {
+        final int DOCS = 1000;
+
+        log.info("testLargerDVEnableIndex started");
+
+        final File INDEX_SRC = generateIndex(DOCS);
+        final File INDEX_DEST = new File("target/testindex.deletefreely.dest");
+        try {
+            IndexUtils.convert(INDEX_SRC, INDEX_DEST, createDVFieldDescriptions(INDEX_SRC));
+            IndexReader readerSrc = DirectoryReader.open(MMapDirectory.open(INDEX_SRC));
+            IndexReader readerDest = DirectoryReader.open(MMapDirectory.open(INDEX_DEST));
+
+            long multiCount = 0;
+            long singleCount = 0;
+            long longCount = 0;
+            long doubleCount = 0;
+            for (int docID = 0 ; docID < DOCS ; docID++) {
+                {
+                    String[] multisSrc = readerSrc.document(docID).getValues(MULTI);
+                    if (multisSrc != null) {
+                        List<String> dvs = getSortedSetDocValues(readerDest, docID, MULTI);
+                        Arrays.sort(multisSrc);
+                        Collections.sort(dvs);
+                        assertEquals("There should be as many DV as stored for field " + MULTI,
+                                     multisSrc.length, dvs.size());
+                        for (int i = 0; i < multisSrc.length; i++) {
+                            assertEquals("Value " + i + " for field " + MULTI + " should be equal",
+                                         multisSrc[i], dvs.get(i));
+                            multiCount++;
+                        }
+                    }
+                }
+                {
+                    String singleSrc = readerSrc.document(docID).get(SINGLE);
+                    if (singleSrc != null) {
+                        String dv = getSortedDocValue(readerDest, docID, SINGLE);
+                        assertEquals("The DV for field " + SINGLE + " should match the stored value",
+                                     singleSrc, dv);
+                        singleCount++;
+                    }
+                }
+                {
+                    IndexableField fieldSrc = readerSrc.document(docID).getField(LONG);
+                    if (fieldSrc != null) {
+                        long longSrc = fieldSrc.numericValue().longValue();
+                        long dv = getLongDocValue(readerDest, docID, LONG);
+                        assertEquals("The DV for field " + LONG + " should match the stored value",
+                                     longSrc, dv);
+                        longCount++;
+                    }
+                }
+                {
+                    IndexableField fieldSrc = readerSrc.document(docID).getField(DOUBLE);
+                    if (fieldSrc != null) {
+                        double doubleSrc = fieldSrc.numericValue().doubleValue();
+                        double dv = getDoubleDocValue(readerDest, docID, DOUBLE);
+                        assertEquals("The DV for field " + DOUBLE + " should match the stored value",
+                                     doubleSrc, dv);
+                        doubleCount++;
+                    }
+                }
+            }
+            assertTrue("There should be at least 1 value for field " + MULTI + " in a document", multiCount > 0);
+            assertTrue("There should be at least 1 value for field " + SINGLE + " in a document", singleCount > 0);
+            assertTrue("There should be at least 1 value for field " + LONG + " in a document", longCount > 0);
+            assertTrue("There should be at least 1 value for field " + DOUBLE + " in a document", doubleCount > 0);
+            readerSrc.close();
+            readerDest.close();
         } finally {
             delete(INDEX_SRC);
             delete(INDEX_DEST);
@@ -262,6 +337,26 @@ public class DVReaderTest extends TestCase {
         return result.utf8ToString();
     }
 
+    private double getDoubleDocValue(IndexReader reader, int docID, String field) throws IOException {
+        if (!reader.getContext().isTopLevel) {
+            throw new IllegalStateException("Expected the reader to be topLevel");
+        }
+        for (AtomicReaderContext atom: reader.getContext().leaves()) {
+            if (atom.docBase <= docID && atom.docBase + atom.reader().maxDoc() > docID) {
+                return getDoubleDocValue(atom, docID, field);
+            }
+        }
+        throw new IllegalArgumentException("The docID " + docID + " exceeded the index size");
+    }
+    private static Double getDoubleDocValue(AtomicReaderContext atomContext, int docID, String field)
+            throws IOException {
+        NumericDocValues dvs = atomContext.reader().getNumericDocValues(field);
+        if (dvs == null) {
+            throw new IllegalStateException("No NumericDocValues for field '" + field + "'");
+        }
+        return NumericUtils.sortableLongToDouble(dvs.get(docID));
+    }
+
     private static long getLongDocValue(IndexReader reader, int docID, String field) throws IOException {
         if (!reader.getContext().isTopLevel) {
             throw new IllegalStateException("Expected the reader to be topLevel");
@@ -279,6 +374,66 @@ public class DVReaderTest extends TestCase {
             throw new IllegalStateException("No NumericDocValues for field '" + field + "'");
         }
         return dvs.get(docID);
+    }
+
+    // Semi.random index with stored fields only: multi, single and long. Some values missing from some documents
+    private static File generateIndex(int documents) throws IOException {
+        final File INDEX = new File("target/testindex.deletefreely." + documents);
+        final long seed = new Random().nextLong();
+        Random random = new Random(seed);
+        log.info("Testing with random seed" + seed);
+        Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
+
+        final FieldType SINGLE_F = new FieldType();
+        SINGLE_F.setIndexed(true);
+        SINGLE_F.setStored(true);
+
+        final FieldType MULTI_F = new FieldType();
+        MULTI_F.setIndexed(true);
+        MULTI_F.setStored(true);
+
+        final FieldType SEARCH_F = new FieldType();
+        SEARCH_F.setIndexed(true);
+
+        final FieldType LONG_F = new FieldType();
+        LONG_F.setIndexed(true);
+        LONG_F.setStored(true);
+        LONG_F.setNumericType(FieldType.NumericType.LONG);
+
+        final FieldType DOUBLE_F = new FieldType();
+        DOUBLE_F.setIndexed(true);
+        DOUBLE_F.setStored(true);
+        DOUBLE_F.setNumericType(FieldType.NumericType.DOUBLE);
+
+        IndexWriter indexWriter = new IndexWriter(
+                MMapDirectory.open(INDEX), new IndexWriterConfig(LUCENE_VERSION, analyzer));
+        for (int docID = 0 ; docID < documents ; docID++) {
+            Document document = new Document();
+            document.add(new Field(ID, Integer.toString(docID), SINGLE_F));
+            document.add(new Field(SEARCH, SEARCH_CONTENT + "_" + docID, SEARCH_F));
+            if (random.nextInt(5) > 0) {
+                document.add(new Field(SINGLE, SINGLE_CONTENT + "_r" + random.nextInt(), SINGLE_F));
+            }
+            if (random.nextInt(5) > 0) {
+                document.add(new Field(MULTI, MULTI_CONTENT_1 + "_" + docID, MULTI_F));
+                if (random.nextInt(3) > 0) {
+                    document.add(new Field(MULTI, MULTI_CONTENT_2 + "_random" + random.nextInt(5), MULTI_F));
+                }
+            }
+            if (random.nextInt(5) > 0) {
+                document.add(new LongField(LONG, random.nextLong(), LONG_F));
+            }
+            if (random.nextInt(5) > 0) {
+                document.add(new DoubleField(DOUBLE, random.nextDouble(), DOUBLE_F));
+            }
+            indexWriter.addDocument(document);
+            if (docID == documents / 3) {
+                indexWriter.commit(); // Ensure multi-segment
+            }
+        }
+        indexWriter.commit();
+        indexWriter.close();
+        return INDEX;
     }
 
     public static File generateIndex() throws IOException {
