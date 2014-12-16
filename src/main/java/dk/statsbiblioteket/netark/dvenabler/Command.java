@@ -15,8 +15,6 @@
 package dk.statsbiblioteket.netark.dvenabler;
 
 import org.apache.commons.cli.*;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo;
 
@@ -87,7 +85,7 @@ public class Command {
                 return;
             }
             final String[] rawFields = cli.getOptionValues(FIELDS);
-            List<DVConfig> dvFields = getFields(in, rawFields);
+            List<DVConfig> dvFields = getTweakedFields(in, rawFields);
             if (dvFields == null) {
                 System.err.println("Invalid field specification");
                 usage();
@@ -117,13 +115,14 @@ public class Command {
         System.out.println("Finished conversion successfully in " + (processTime/1000000/1000) + " seconds");
     }
 
-    private static List<DVConfig> getFields(File index, String[] rawFields) throws IOException {
+    private static List<DVConfig> getTweakedFields(File index, String[] rawFields) throws IOException {
         List<DVConfig> config = new ArrayList<DVConfig>();
         if (".".equals(rawFields[0])) {
             System.out.println("'.' specified for field: No fields will be adjusted");
             return config;
         }
         List<DVConfig> dvConfigs = IndexUtils.getDVConfigs(index);
+        List<DVConfig> adjustedConfigs = new ArrayList<>(rawFields.length);
         raw:
         for (String rawField: rawFields) {
             String[] tokens = rawField.replace(")", "").split("[(]", 2);
@@ -140,6 +139,7 @@ public class Command {
                     try {
                         if ("NONE".equals(numTokens[0])) {
                             dvConfig.set(null);
+                            adjustedConfigs.add(dvConfig);
                             continue raw;
                         }
                         final FieldInfo.DocValuesType dvType = FieldInfo.DocValuesType.valueOf(numTokens[0]);
@@ -154,6 +154,7 @@ public class Command {
                                 return null;
                             }
                         }
+                        adjustedConfigs.add(dvConfig);
                     } catch (IllegalArgumentException e) {
                         System.err.println("The DocValueType '" + numTokens[0] + " for field "
                                            + dvConfig.getName() + " is unknown");
@@ -164,7 +165,7 @@ public class Command {
             }
             System.err.println("The field '" + field + "' could not be located in the index. Ignoring field");
         }
-        return dvConfigs;
+        return adjustedConfigs;
     }
 
     private static void list(File index, boolean verbose) throws IOException {
