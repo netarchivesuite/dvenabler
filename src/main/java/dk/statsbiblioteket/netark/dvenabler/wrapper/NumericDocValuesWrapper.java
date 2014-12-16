@@ -29,18 +29,22 @@ public class NumericDocValuesWrapper extends NumericDocValues {
     private static Log log = LogFactory.getLog(NumericDocValuesWrapper.class);
 
     private final AtomicReader reader;
+    private final long logEvery;
     private final DVConfig dvConfig;
     private final Set<String> FIELDS; // Contains {@link #field} and nothing else
+    private final ProgressTracker tracker;
 
-    public NumericDocValuesWrapper(AtomicReader reader, DVConfig dvConfig)
-            throws IOException {
+    public NumericDocValuesWrapper(AtomicReader reader, DVConfig dvConfig) throws IOException {
         this.reader = reader;
+        logEvery = reader.maxDoc() == 0 ? Long.MAX_VALUE : reader.maxDoc() / 10;
         this.dvConfig = dvConfig;
-        FIELDS = new HashSet<String>(Arrays.asList(dvConfig.getName()));
+        FIELDS = new HashSet<>(Arrays.asList(dvConfig.getName()));
+        tracker = new ProgressTracker(dvConfig.getName(), log, reader.maxDoc());
     }
 
     @Override
     public long get(int docID) {
+        tracker.ping(docID);
         try {
             IndexableField iField = reader.document(docID, FIELDS).getField(dvConfig.getName());
             if (iField == null) {
@@ -62,8 +66,7 @@ public class NumericDocValuesWrapper extends NumericDocValues {
                 case DOUBLE: return Double.doubleToLongBits(number.doubleValue());
                 case FLOAT: return Float.floatToIntBits(number.longValue());
                 default: throw new IllegalStateException(
-                        "Unknown NumericType " + dvConfig.getNumericType()
-                        + " for field " + dvConfig.getName());
+                        "Unknown NumericType " + dvConfig.getNumericType() + " for field " + dvConfig.getName());
             }
         } catch (IOException e) {
             throw new RuntimeException(

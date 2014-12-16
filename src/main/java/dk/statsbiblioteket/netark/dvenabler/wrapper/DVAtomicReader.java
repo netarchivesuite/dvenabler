@@ -17,23 +17,22 @@ package dk.statsbiblioteket.netark.dvenabler.wrapper;
 import dk.statsbiblioteket.netark.dvenabler.DVConfig;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
 import java.util.*;
 
 /**
- *
+ * Wraps a given AtomicReader and exposes the stored values in the stated fields as DocValues.
  */
 public class DVAtomicReader extends FilterAtomicReader {
     private static Log log = LogFactory.getLog(DVAtomicReader.class);
 
     private final Map<String, DVConfig> dvConfigs;
-    private final HashMap<String, Bits> dvContent = new HashMap<String, Bits>();
+    private final HashMap<String, Bits> dvContent = new HashMap<>();
+    private final long constructionTime = System.nanoTime();
 
     @Override
     public FieldInfos getFieldInfos() {
@@ -51,7 +50,7 @@ public class DVAtomicReader extends FilterAtomicReader {
                         mDocValuesType, oInfo.getNormType(), oInfo.attributes());        */
         return new FieldInfos(modified);
     }
-
+/*
     private FieldType.NumericType inferNumericType(String field) {
         try {
             Terms terms = fields().terms(field);
@@ -69,6 +68,7 @@ public class DVAtomicReader extends FilterAtomicReader {
         }
         return null;
     }
+   */
 
     /**
      * Creates an adjusting reader; removing or/and adding DocValues for the specified fields.
@@ -78,7 +78,7 @@ public class DVAtomicReader extends FilterAtomicReader {
      */
     public DVAtomicReader(AtomicReader innerReader, Set<DVConfig> dvConfigs) {
         super(innerReader);
-        this.dvConfigs = new HashMap<String, DVConfig>(dvConfigs.size());
+        this.dvConfigs = new HashMap<>(dvConfigs.size());
         for (DVConfig dvConfig: dvConfigs) {
             this.dvConfigs.put(dvConfig.getName(), dvConfig);
         }
@@ -95,12 +95,13 @@ public class DVAtomicReader extends FilterAtomicReader {
 
         if (!dvContent.containsKey(field)) {
             log.info("Resolving docsWithField(" + field + ")");
+            long startTime = System.nanoTime();
             DVConfig dvConfig = dvConfigs.get(field);
             if (!dvConfig.hasDocValues()) {
                 dvContent.put(field, null);
             } else {
                 OpenBitSet hasContent = new OpenBitSet(maxDoc());
-                final Set<String> FIELDS = new HashSet<String>(Arrays.asList(field));
+                final Set<String> FIELDS = new HashSet<>(Arrays.asList(field));
                 for (int docID = 0 ; docID < maxDoc() ; docID++) {
                      if (document(docID, FIELDS).getField(field) != null) {
                          hasContent.fastSet(docID);
@@ -108,6 +109,8 @@ public class DVAtomicReader extends FilterAtomicReader {
                 }
                 dvContent.put(field, hasContent);
             }
+            log.info("Resolved docsWithField(" + field + ") for " + maxDoc() + " docs in "
+                     + (System.nanoTime()-startTime)/1000000 + "ms");
         }
         return dvContent.get(field);
     }
@@ -127,7 +130,11 @@ public class DVAtomicReader extends FilterAtomicReader {
         }
         log.info("getNumericDocValues called for field '" + field + "' with no DV. Constructing from stored");
         // TODO: Infer whether this is long, int, double or float
-        return new NumericDocValuesWrapper(this, dvConfigs.get(field));
+        long startTime = System.nanoTime();
+        NumericDocValues dvs = new NumericDocValuesWrapper(this, dvConfigs.get(field));
+        log.info("getNumericDocValues(" + field + ") for " + maxDoc() + " docs prepared in "
+                 + (System.nanoTime()-startTime)/1000000 + "ms");
+        return dvs;
     }
 
     @Override
@@ -144,7 +151,7 @@ public class DVAtomicReader extends FilterAtomicReader {
             log.info("getBinaryDocValues called for field '" + field + "'. DV already present, returning directly");
             return dv;
         }
-        log.info("getBinaryDocValues called for field '" + field + "' with no DV. Constructing from stored");
+        log.warn("getBinaryDocValues called for field '" + field + "' with no DV. Not implemented yet!");
         // TODO: Implement this
         return dv;
     }
@@ -163,7 +170,11 @@ public class DVAtomicReader extends FilterAtomicReader {
             return dv;
         }
         log.info("getSortedDocValues called for field '" + field + "' with no DV. Constructing from stored");
-        return new SortedDocValuesWrapper(this, dvConfigs.get(field));
+        long startTime = System.nanoTime();
+        SortedDocValues dvs = new SortedDocValuesWrapper(this, dvConfigs.get(field));
+        log.info("getSortedDocValues(" + field + ") for " + maxDoc() + " docs prepared in "
+                 + (System.nanoTime()-startTime)/1000000 + "ms");
+        return dvs;
     }
 
     @Override
@@ -180,12 +191,16 @@ public class DVAtomicReader extends FilterAtomicReader {
             return dv;
         }
         log.info("getSortedSetDocValues called for field '" + field + "' with no DV. Constructing from stored");
-        return new SortedSetDocValuesWrapper(this, dvConfigs.get(field));
+        long startTime = System.nanoTime();
+        SortedSetDocValues dvs = new SortedSetDocValuesWrapper(this, dvConfigs.get(field));
+        log.info("getSortedSetDocValues(" + field + ") for " + maxDoc() + " docs prepared in "
+                 + (System.nanoTime()-startTime)/1000000 + "ms");
+        return dvs;
     }
 
     @Override
     protected void doClose() throws IOException {
-        log.info("close called");
+        log.info("Close called " + (System.nanoTime()-constructionTime)/1000000 + "ms after construction");
         super.doClose();
     }
 }

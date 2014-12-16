@@ -41,6 +41,7 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
     private int ordinalIndex = -1;
     private long[] ordinals = new long[10];
     private int ordinalsCount = -1;
+    private final ProgressTracker tracker;
 
     public SortedSetDocValuesWrapper(AtomicReader reader, DVConfig field) throws IOException {
         this.reader = reader;
@@ -49,21 +50,21 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
         log.info("Creating map for SortedSetDocValues for field '" + field + "'");
         long startTime = System.nanoTime();
         values = fill();
-        log.info("Finished creating SortedSetDocValues with " + values.size() + " unique values for field '" + field
-                 + "' in " + ((System.nanoTime()-startTime)/1000000/1000) + "ms");
+        tracker = new ProgressTracker(field.getName(), log, reader.maxDoc());
+        log.info("Finished creating SortedSetDocValues with " + values.size() + " unique values for " + reader.maxDoc()
+                 + " docs for field '" + field + "' in " + ((System.nanoTime()-startTime)/1000000/1000) + "ms");
     }
 
     private List<BytesRef> fill() throws IOException {
         // TODO: Is this sort the same as the default BytesRef-based sort for DocValues?
         final SortedSet<BytesRef> values = new TreeSet<>();
         for (int docID = 0 ; docID < reader.maxDoc() ; docID++) {
-            for (IndexableField field: reader.document(docID, FIELDS)) {
-                if (this.field.getName().equals(field.name())) {
-                    String value = field.stringValue();
-                    if (value != null) {
-                        values.add(new BytesRef(value));
-                    }
-                }
+            String[] stored = reader.document(docID, FIELDS).getValues(field.getName());
+            if (stored == null) {
+                continue;
+            }
+            for (String value: stored) {
+                values.add(new BytesRef(value));
             }
         }
         return new ArrayList<>(values);
@@ -76,6 +77,8 @@ public class SortedSetDocValuesWrapper extends SortedSetDocValues {
 
     @Override
     public void setDocument(int docID) {
+        tracker.ping(docID);
+
         this.docID = docID;
         ordinalIndex = 0;
         ordinalsCount = 0;

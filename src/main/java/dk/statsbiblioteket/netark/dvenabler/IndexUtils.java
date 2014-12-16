@@ -23,6 +23,7 @@ public class IndexUtils {
 
     // Last version with DocValuesFormat="disk"
     private static final Version LUCENE_VERSION = Version.LUCENE_48;
+    private static final long M = 1000000;
 
     /**
      * Transform the index at source to the destination, adjusting DocValues for the given adjustFields underway.
@@ -35,18 +36,34 @@ public class IndexUtils {
             File source, File destination, Collection<DVConfig> dvConfigs) throws IOException {
         log.info("Converting index at " + source + " to " + destination + " with " + dvConfigs.size()
                  + " DocValues adjustment fields");
+        final long startTime = System.nanoTime();
 
-        IndexReader dvReader = new DVDirectoryReader(
-                DirectoryReader.open(MMapDirectory.open(source)), new HashSet<DVConfig>(dvConfigs));
+        DirectoryReader inner = DirectoryReader.open(MMapDirectory.open(source));
+        final long afterInner = System.nanoTime();
+        log.info("Opened standard reader(" + source + ") in " + (afterInner-startTime)/M + "ms");
+
+        IndexReader dvReader = new DVDirectoryReader(inner, new HashSet<>(dvConfigs));
+        final long afterWrapper = System.nanoTime();
+        log.info("Opened DVWrapper(" + source + ") in " + (afterWrapper-afterInner)/M + "ms");
+
         Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
         IndexWriter writer = new IndexWriter(
                 MMapDirectory.open(destination), new IndexWriterConfig(LUCENE_VERSION, analyzer));
+        final long afterWriterCreation = System.nanoTime();
+        log.info("Created writer(" + destination + ") in " + (afterWriterCreation-afterWrapper)/M + "ms");
 
         writer.addIndexes(dvReader);
+        final long afterConversion = System.nanoTime();
+        log.info("Converted index(" + destination + ") in " + (afterConversion-afterWriterCreation)/M + "ms");
+
         writer.commit();
+        final long afterCommit = System.nanoTime();
+        log.info("Finished commit(" + destination + ") in " + (afterCommit - afterCommit) / M + "ms");
+
         // No need for optimize as the addIndexes + commit ensures transformation
         writer.close();
         dvReader.close();
+        log.info("All done. Total time " + (System.nanoTime() - startTime) / M + "ms");
     }
 
     /**
@@ -59,9 +76,8 @@ public class IndexUtils {
      * @throws IOException if the information could not be extracted.
      */
     public static List<DVConfig> getDVConfigs(File indexLocation) throws IOException {
-        IndexReader reader = DirectoryReader.open(MMapDirectory.open(indexLocation));
-        try {
-            Map<String, DVConfig> dvConfigs = new HashMap<String, DVConfig>();
+        try (IndexReader reader = DirectoryReader.open(MMapDirectory.open(indexLocation))) {
+            Map<String, DVConfig> dvConfigs = new HashMap<>();
             for (AtomicReaderContext context : reader.leaves()) {
                 for (FieldInfo fieldInfo : context.reader().getFieldInfos()) {
                     if (dvConfigs.containsKey(fieldInfo.name)) {
@@ -71,15 +87,13 @@ public class IndexUtils {
                     dvConfigs.put(fieldInfo.name, new DVConfig(
                             fieldInfo,
                             fieldInfo.hasDocValues() && fieldInfo.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC
-                                    ? FieldType.NumericType.LONG : null,
+                            ? FieldType.NumericType.LONG : null,
                             first));
                 }
             }
-            List<DVConfig> configs = new ArrayList<DVConfig>(dvConfigs.values());
+            List<DVConfig> configs = new ArrayList<>(dvConfigs.values());
             Collections.sort(configs);
             return configs;
-        } finally {
-            reader.close();
         }
     }
 

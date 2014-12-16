@@ -314,7 +314,6 @@ public class DVReaderTest extends TestCase {
         return values;
     }
 
-
     private static String getSortedDocValue(IndexReader reader, int docID, String field) throws IOException {
         if (!reader.getContext().isTopLevel) {
             throw new IllegalStateException("Expected the reader to be topLevel");
