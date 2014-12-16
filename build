@@ -1,0 +1,12 @@
+#
+# Quick hack to get codecs to work.
+# Proper Maven setup pending.
+#
+
+mvn clean 
+mvn install -DskipTests  assembly:assembly
+pushd hack
+mkdir -p META-INF/services
+cp *codecs* META-INF/services
+zip -r ../target/dvenabler-1.0-SNAPSHOT-jar-with-dependencies.jar META-INF
+popd
