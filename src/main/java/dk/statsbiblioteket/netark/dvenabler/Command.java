@@ -116,7 +116,7 @@ public class Command {
     }
 
     private static List<DVConfig> getTweakedFields(File index, String[] rawFields) throws IOException {
-        List<DVConfig> config = new ArrayList<DVConfig>();
+        List<DVConfig> config = new ArrayList<>();
         if (".".equals(rawFields[0])) {
             System.out.println("'.' specified for field: No fields will be adjusted");
             return config;

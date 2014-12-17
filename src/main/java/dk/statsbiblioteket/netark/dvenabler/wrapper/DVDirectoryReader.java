@@ -55,7 +55,7 @@ public class DVDirectoryReader extends FilterDirectoryReader {
 
         @Override
         public AtomicReader wrap(AtomicReader reader) {
-            log.debug("Wrapping Atomic");
+            log.debug("Wrapping AtomicReader with " + reader.maxDoc() + " docs");
             return new DVAtomicReader(reader, dvConfigs);
         }
     }

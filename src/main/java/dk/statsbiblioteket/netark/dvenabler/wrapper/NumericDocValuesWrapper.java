@@ -29,14 +29,12 @@ public class NumericDocValuesWrapper extends NumericDocValues {
     private static Log log = LogFactory.getLog(NumericDocValuesWrapper.class);
 
     private final AtomicReader reader;
-    private final long logEvery;
     private final DVConfig dvConfig;
     private final Set<String> FIELDS; // Contains {@link #field} and nothing else
     private final ProgressTracker tracker;
 
     public NumericDocValuesWrapper(AtomicReader reader, DVConfig dvConfig) throws IOException {
         this.reader = reader;
-        logEvery = reader.maxDoc() == 0 ? Long.MAX_VALUE : reader.maxDoc() / 10;
         this.dvConfig = dvConfig;
         FIELDS = new HashSet<>(Arrays.asList(dvConfig.getName()));
         tracker = new ProgressTracker(dvConfig.getName(), log, reader.maxDoc());

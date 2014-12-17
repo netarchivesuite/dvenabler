@@ -85,7 +85,7 @@ public class DVAtomicReader extends FilterAtomicReader {
         for (DVConfig dvConfig: dvConfigs) {
             this.dvConfigs.put(dvConfig.getName(), dvConfig);
         }
-        log.info("Wrapped AtomicReader with " + dvConfigs.size() + " field adjustments");
+        log.info("Wrapped AtomicReader with " + maxDoc() + " docs and " + dvConfigs.size() + " field adjustments");
     }
 
     // Should have been named docsWithDocValueEntriesForField
@@ -156,7 +156,7 @@ public class DVAtomicReader extends FilterAtomicReader {
         }
         log.warn("getBinaryDocValues called for field '" + field + "' with no DV. Not implemented yet!");
         // TODO: Implement this
-        return dv;
+        return null;
     }
 
     @Override

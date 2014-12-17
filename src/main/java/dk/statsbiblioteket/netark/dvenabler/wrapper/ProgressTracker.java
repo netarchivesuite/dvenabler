@@ -17,7 +17,7 @@ public class ProgressTracker {
     private final int logEvery;
 
     private long requests;
-    private long firstDoc;
+    private long firstDoc = -1;
 
     public ProgressTracker(String field, Log log, int maxDoc) {
         this.field = field;
@@ -33,12 +33,12 @@ public class ProgressTracker {
             firstDoc = System.nanoTime();
             requests = 1;
         } else if (docID % logEvery == 0 || docID == maxDoc-1) {
-            long ms = (System.nanoTime()-firstDoc)/1000000;
+            long ms = firstDoc == -1 ? -1 : (System.nanoTime()-firstDoc)/1000000;
             log.debug(String.format(
                     "Getting wrapped DocValue for field %s in doc %d/%d. " +
                     "Time since doc 0=%dms, requests=%d, speed %.2f docs/ms",
                     field, docID, maxDoc,
-                    ms, requests, ms == 0 ? 0 : 1.0 * requests / ms));
+                    ms, requests, ms == -1 ? -1 : ms == 0 ? 0 : 1.0 * requests / ms));
         }
     }
 }

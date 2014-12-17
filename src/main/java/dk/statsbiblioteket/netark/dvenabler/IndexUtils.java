@@ -14,9 +14,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.store.MMapDirectory;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.Version;
-import org.omg.DynamicAny._DynFixedStub;
 
 public class IndexUtils {
     private static Log log = LogFactory.getLog(IndexUtils.class);
