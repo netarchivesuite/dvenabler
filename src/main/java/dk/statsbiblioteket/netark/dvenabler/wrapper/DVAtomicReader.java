@@ -36,7 +36,8 @@ public class DVAtomicReader extends FilterAtomicReader {
 
     @Override
     public FieldInfos getFieldInfos() {
-        log.info("Wrapped getFieldInfos called");
+        log.info("Merging getFieldInfos called with " + maxDoc() + " docs");
+        long startTime = System.nanoTime();
         FieldInfos original = super.getFieldInfos();
         FieldInfo[] modified = new FieldInfo[original.size()];
         int index = 0;
@@ -48,6 +49,8 @@ public class DVAtomicReader extends FilterAtomicReader {
                         oInfo.name, oInfo.isIndexed(), oInfo.number, oInfo.hasVectors(),
                         oInfo.omitsNorms(), oInfo.hasPayloads(), oInfo.getIndexOptions(),
                         mDocValuesType, oInfo.getNormType(), oInfo.attributes());        */
+        log.info("Merged " + original.size() + " original and " + dvConfigs.size() + " tweaked FieldInfos for "
+                 + maxDoc() + " docs in " + (System.nanoTime()-startTime)/1000000 + "ms");
         return new FieldInfos(modified);
     }
 /*

@@ -5,8 +5,15 @@
 
 mvn clean 
 mvn install -DskipTests  assembly:assembly
+
+# Support all known codecs
 pushd hack
 mkdir -p META-INF/services
 cp *codecs* META-INF/services
 zip -r ../target/dvenabler-1.0-SNAPSHOT-jar-with-dependencies.jar META-INF
+
+# Override the text log4j with the src log4j
+popd
+pushd src/main/resources/
+zip ../../../target/dvenabler-1.0-SNAPSHOT-jar-with-dependencies.jar log4j.xml
 popd
