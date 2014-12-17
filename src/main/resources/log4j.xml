@@ -1,24 +1,36 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
-     <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
-        <param name="Target" value="System.out"/>
-        <param name="Threshold" value="DEBUG"/>
+
+
+    <!-- A time/date based console appender -->
+    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+        <param name="Threshold" value="TRACE"/>
         <layout class="org.apache.log4j.PatternLayout">
-        <param name="ConversionPattern" value="%d{ABSOLUTE} %-5p [%c{1}] %m%n"/>
+            <param name="ConversionPattern" value="%-5p [%t] [%d] [%c] %m%n"/>
         </layout>
-      </appender>
+    </appender>
 
-      <logger name="dk.statsbiblioteket.netark.dvenabler">
-        <level value="DEBUG" />
-        <appender-ref ref="CONSOLE" />
+
+    <!-- The full log appender uses a extremely slow pattern, on production systems use only this appender with a threshold of fatal -->
+    <appender name="FULL_LOG" class="org.apache.log4j.ConsoleAppender">
+        <param name="Threshold" value="FATAL"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%-5p [%t] [%d] [%c] - %l [LINENUMBER: %L] [METHOD: %M] [%X]  %m%n"/>
+        </layout>
+    </appender>
+
+<!--
+    <logger name="dk.statsbiblioteket">
+        <level value="debug"/>
+        <appender-ref ref="CONSOLE"/>
     </logger>
-
+    -->
+    <!-- all loggeres inherit the root logger - so don't include the root appenders in the other loggers (will duplicate log entries in the log file) -->
     <root>
-        <level value="INFO" />
-        <appender-ref ref="CONSOLE" />
+        <level value="debug"/>
+        <appender-ref ref="CONSOLE"/>
     </root>
 
 </log4j:configuration>
-
-

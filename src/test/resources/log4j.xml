@@ -21,16 +21,16 @@
         </layout>
     </appender>
 
-
+<!--
     <logger name="dk.statsbiblioteket">
         <level value="debug"/>
         <appender-ref ref="CONSOLE"/>
     </logger>
-
+    -->
     <!-- all loggeres inherit the root logger - so don't include the root appenders in the other loggers (will duplicate log entries in the log file) -->
     <root>
-        <level value="FATAL"/>
-        <appender-ref ref="FULL_LOG"/>
+        <level value="debug"/>
+        <appender-ref ref="CONSOLE"/>
     </root>
 
 </log4j:configuration>
